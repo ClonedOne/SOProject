@@ -53,7 +53,8 @@ void* func_t_1 () {
 	struct sockaddr_in server;
 	struct sockaddr_in client;
 	short port = 4000;
-	char contBuf[DIM];
+	char sendBuf[DIM];
+	char recvBuf[DIM];
 	char* comm;
 	
 	
@@ -64,6 +65,7 @@ void* func_t_1 () {
 	
 	
 	puts("We are starting the receiving thread");
+	
 	//open the server socket to accept connections
 	if ((servsock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1){
 		puts("Could not Open socket");
@@ -106,25 +108,28 @@ void* func_t_1 () {
 	
 	//I'll probably will let the server/other client do this part of exchanging names
 	comm = "Hello, please state your name";
-	strcpy(contBuf, comm);
+	strcpy(sendBuf, comm);
 	//printf("DEBUG: %s\n", comm);
-	write(sock_a, contBuf, DIM);
-	read(sock_a, contBuf, DIM);
-	strcpy(callingID, contBuf);
+	write(sock_a, sendBuf, DIM);
+	read(sock_a, recvBuf, DIM);
+	strcpy(callingID, recvBuf);
 	printf("caller's name is: %s\n", callingID);
 	printf("Type: '-c h' for the list of commands\n\n");
 	
 	while (1){
 		inchat = 1;
-		sleep(1);
+		
+		//I need to find a way to make "read" non blocking and possibly interrupt driven
 		printf( "%-*s\n", ts.ws_col, "ABC" );
+		
+		
 		row_count++;	
 		if (row_count == ts.ws_row -4){
 			puts("\033[2J\033[H");
 			printf("\033[AYou have been called by: %s\n",callingIP);
 			printf("Caller name is: %s\n", callingID);
 			printf("Type: '-c h' for the list of commands\n\n");
-			row_count = 0;
+			 row_count = 0;
 		}
 	
 	
