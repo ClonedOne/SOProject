@@ -30,6 +30,32 @@ int inchat;
 int com_res;
 
 
+//Clear Screen
+void clearS (){
+	printf("\033[2J\033[H\033[A");
+}
+
+//Change socket to NONBLOCKING mode
+void noBlockSocket(int ds_sock){	
+	int flags = fcntl(ds_sock, F_GETFL, 0);
+	fcntl(ds_sock, F_SETFL, flags | O_NONBLOCK);
+}
+
+
+//Change stdin to NONBLOCKING mode
+void noBlockInput () {
+	int fd = fileno(stdin);
+	int flags = fcntl(fd, F_GETFL, 0);
+	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+}
+
+
+//Reset stdin to BLOCKING mode
+void resetBlockInput(){
+	int fd = fileno(stdin);
+	fcntl(fd, F_SETFL, 0);
+}
+
 
 //This combination of escape characters does the following: 
 //Erase screen, Moves the cursor back to home position
@@ -86,7 +112,6 @@ int command(char* buf) {
 			puts("Couldn't recognise the command, please try '::h' for help");
 		
 	}
-	return 0;
 }
 
 
@@ -100,6 +125,16 @@ void sigwinch_handler (int a) {
 	}
 }
 
+
+//Checks for incoming commands
+void checkForCommand(char* sendBuf) {
+	if((fgets(sendBuf, DIM, stdin)) != NULL) {
+		if(sendBuf[0] == ':' && sendBuf[1] == ':') {
+			com_res = command(sendBuf);
+			sendBuf[0] = '\0';
+		}
+	}
+}
 
 
 //This thread manages incoming connections
@@ -151,15 +186,23 @@ void* func_t_1 () {
 
 	while(com_res != QUIT){
 	
-		//waits for connections
+		//waits for connections, changing both servsock and stdin to NONBLOCK
 		length = sizeof(client);
 		puts("\033[1;34mWaiting for incoming calls.....\033[0m");
-		while ((sock_a = accept(servsock, (struct sockaddr *)&client, &length)) == -1 );
+		noBlockInput();
+		checkForCommand(sendBuf);
+		noBlockSocket(servsock);
+		while ((sock_a = accept(servsock, (struct sockaddr *)&client, &length)) == -1 && com_res != QUIT){
+		checkForCommand(sendBuf);
+		}
 		
 		//clears the screen
 		printf("\033[2J");
 		for(k = 0; k < ts.ws_row; k++)
 			printf("%s", "\033[A");
+			
+		//Reset stdin to BLOCKING MODE
+		resetBlockInput();
 	
 		//Gets caller's IP and name and ask the user to accept the call
 		callingIP = inet_ntoa(client.sin_addr);
@@ -175,16 +218,13 @@ void* func_t_1 () {
 		if(com_res == ACCEPT){
 	
 			//change the communicating socket and STDIN to NONBLOCKING mode
-			int flags = fcntl(sock_a, F_GETFL, 0);
-			fcntl(sock_a, F_SETFL, flags | O_NONBLOCK);
-			int fd = fileno(stdin);
-			flags = fcntl(fd, F_GETFL, 0);
-			fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+			noBlockSocket(sock_a);
+			noBlockInput();
 	
 			inchat = 1;
 			raise(SIGWINCH);
 	
-			while(!(com_res <= 0)){
+			while(!(com_res < 0)){
 				rN = read(sock_a, recvBuf, DIM);
 				if(rN > 0){
 					printf("%s", "\033[2K");
@@ -215,11 +255,13 @@ void* func_t_1 () {
 	
 			}
 		}
-		else{
+		else if (com_res != QUIT){
 			close(sock_a);
 			puts("Call refused");
+			com_res = 0;
 		}
 	}
+	close(servsock);
 }
 
 void* func_t_2 (){}
@@ -247,4 +289,7 @@ int main(int argc, char*argv[]){
 		
 	//This loop ends when the user input the ::q command
 	while(com_res != QUIT);
+	printf("\033[1;31mQuitting....\033[0m\n");
+	sleep(2);
+	clearS();
 }
