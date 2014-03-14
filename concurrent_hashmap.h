@@ -1,4 +1,6 @@
-#define HASHMAP_INIT_SIZE 1000
+#define HASHMAP_INIT_SIZE 10
+#define INCREASE_MEMORY 1
+
 
 
 typedef struct 
@@ -14,11 +16,19 @@ typedef struct
 	value* value;
 } key;
 
+/*typedef struct
+{
+	value* value;
+} keytovalue;*/
+
 
 key* first_key;
+value* first_value;
 key* keypointer;
+value* values;
 int hashmap_size;
 int entry_count;
+
 
 
 
