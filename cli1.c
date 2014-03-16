@@ -30,6 +30,30 @@ int inchat;
 int com_res;
 
 
+//Moves the pointer one line above and all the way back tho line start 
+//and prints given received string
+void printRecvUp(char* recvBuf) {
+	int k;
+	printf("\033[s");
+	for(k = 0; k < ts.ws_col; k++)
+		printf("%s", "\033[D");
+	printf("\033[1;31m%s: \033[0m", callingID);
+	printf("%s", recvBuf);
+	printf("\033[u");
+}
+
+//Moves the pointer one line above and all the way back tho line start 
+//and prints given written string
+void printSendUp(char* sendBuf){
+	int k;	
+	printf("\033[A");
+	for(k = 0; k < ts.ws_col; k++)
+		printf("%s", "\033[D");
+	printf("\033[1;34m%s: \033[0m", "You");
+	printf("%s", sendBuf);
+	//printf("\033[u");
+}
+
 //Clear Screen
 void clearS (){
 	printf("\033[2J\033[H\033[A");
@@ -84,6 +108,7 @@ int command(char* buf) {
 			puts("::d --> Disconnect from current call");
 			puts("::q --> Quit the program");
 			puts("::h --> Show the HELP");	
+			return 0;
 		break;
 		
 		
@@ -110,6 +135,7 @@ int command(char* buf) {
 	
 		default:
 			puts("Couldn't recognise the command, please try '::h' for help");
+			return 0;
 		
 	}
 }
@@ -195,7 +221,11 @@ void* func_t_1 () {
 		while ((sock_a = accept(servsock, (struct sockaddr *)&client, &length)) == -1 && com_res != QUIT){
 		checkForCommand(sendBuf);
 		}
-		
+
+		//Checks if the user selected the "quit" option
+		if(com_res == QUIT)
+			break;
+
 		//clears the screen
 		printf("\033[2J");
 		for(k = 0; k < ts.ws_row; k++)
@@ -204,17 +234,21 @@ void* func_t_1 () {
 		//Reset stdin to BLOCKING MODE
 		resetBlockInput();
 	
-		//Gets caller's IP and name and ask the user to accept the call
+		//Gets caller's IP and name 
 		callingIP = inet_ntoa(client.sin_addr);
 		read(sock_a, recvBuf, DIM);
 		strcpy(callingID, recvBuf);
 		recvBuf[0] = '\0';
 		stampaHeader();
+
+		//Asks the user if she/he wants to accept the incoming call
+		com_res = 0;	
 		printf("Do you want to accept the incoming call?\n");
-		fgets(sendBuf, DIM, stdin);
-		com_res = command(sendBuf);
-		sendBuf[0] = '\0';
-	
+		while (com_res == 0) {
+			fgets(sendBuf, DIM, stdin);
+			com_res = command(sendBuf);
+			sendBuf[0] = '\0';
+		}
 		if(com_res == ACCEPT){
 	
 			//change the communicating socket and STDIN to NONBLOCKING mode
@@ -227,11 +261,7 @@ void* func_t_1 () {
 			while(!(com_res < 0)){
 				rN = read(sock_a, recvBuf, DIM);
 				if(rN > 0){
-					printf("%s", "\033[2K");
-					for(k = 0; k < ts.ws_col; k++)
-						printf("%s", "\033[D");
-					printf("\033[1;31m%s: \033[0m", callingID);
-					printf("%s", recvBuf);
+					printRecvUp(recvBuf);
 					row_count++;
 					recvBuf[0] = '\0';
 				}
@@ -240,9 +270,7 @@ void* func_t_1 () {
 						com_res = command(sendBuf);
 						sendBuf[0] = '\0';
 					}else{
-						printf("\033[A\033[2K");
-						printf("\033[1;34m%s: \033[0m", "You");
-						printf("%s", sendBuf);
+						printSendUp(sendBuf);
 						write(sock_a, sendBuf, DIM);
 						sendBuf[0] = '\0';
 						row_count++;
