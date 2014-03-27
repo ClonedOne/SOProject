@@ -28,30 +28,53 @@ char callingID[DIM];
 int row_count;
 int inchat;
 int com_res;
+int r;
 
 
-//Moves the pointer one line above and all the way back tho line start 
-//and prints given received string
-void printRecvUp(char* recvBuf) {
+
+
+//Finds out the increment of lines caused by the new string
+int incr (int slen, int nlen){
+	int ret, temp;
+	temp = slen + nlen - 1;
+//"1" is used to compensate for string of the exact length of the terminal
+	if(temp < 0)
+		temp = 0;
+	ret = (temp/ts.ws_col) + 1;
+	//row_count += ret;
+	return ret;
+}
+
+
+//Saves current cursor postiion
+//force the cursor on the current wiriting line 
+//prints the received string and increments the current writing line
+//restore previous cursor position
+void printRecvUp(char* recvBuf, int length) {
 	int k;
+	int written_rows;
+	written_rows = incr(length, strlen(callingID));
 	printf("\033[s");
-	for(k = 0; k < ts.ws_col; k++)
-		printf("%s", "\033[D");
+	printf("\033[%d;1H", row_count);
 	printf("\033[1;31m%s: \033[0m", callingID);
 	printf("%s", recvBuf);
 	printf("\033[u");
+	row_count += written_rows;
+	
 }
 
-//Moves the pointer one line above and all the way back tho line start 
-//and prints given written string
-void printSendUp(char* sendBuf){
+void printSendUp(char* sendBuf, int length){
 	int k;	
-	printf("\033[A");
-	for(k = 0; k < ts.ws_col; k++)
-		printf("%s", "\033[D");
+	int written_rows;
+	written_rows = incr(length, strlen("You"));
+	printf("\033[A\033[2K");
+	printf("\033[s");
+	printf("\033[%d;1H", row_count);
 	printf("\033[1;34m%s: \033[0m", "You");
 	printf("%s", sendBuf);
-	//printf("\033[u");
+	printf("\033[u");
+	row_count += written_rows;
+
 }
 
 //Clear Screen
@@ -89,8 +112,13 @@ void stampaHeader(){
 	puts("\033[2J\033[H");
 	printf("\033[AYou have been called by: \033[1;31m%s\033[0m\n",callingIP);
 	printf("Caller's name is: \033[1;31m%s\033[0m\n", callingID);
-	printf("Type: '\033[1;32m::h\033[0m' for the list of commands\n\n");
-	row_count = 0;
+	printf("Type: '\033[1;32m::h\033[0m' for the list of commands\n\n\n");
+	row_count = 5;
+	printf("\033[s");
+	r = ts.ws_row-3;
+	printf("\033[%d;1H", r);
+	printf("\033[s");
+	
 }
 
 
@@ -146,7 +174,7 @@ void sigwinch_handler (int a) {
 	signal(SIGWINCH, sigwinch_handler);
 	ioctl(0, TIOCGWINSZ, &ts);
 	if(inchat == 1){
-	//PROBLEM: when the resizing is downward the screen does not scroll down to compensate
+//PROBLEM: when the resizing is downward the screen does not scroll down to compensate
 		stampaHeader();
 	}
 }
@@ -182,7 +210,7 @@ void* func_t_1 () {
 	
 	puts("We are starting the receiving thread");
 	
-	//open the server socket to accept connections
+//open the server socket to accept connections
 	if ((servsock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1){
 		puts("Could not Open socket");
 		exit(EXIT_FAILURE);
@@ -190,14 +218,15 @@ void* func_t_1 () {
 	puts("We created the new socket");
 
 
-	//fills up the sockaddr_in struct accepting connections from anyone
-	//to be checked for security reasons (does it have to accept only from a given list?)
+//fills up the sockaddr_in struct accepting connections from anyone
+//to be checked for security reasons 
+//(does it have to accept only from a given list?)
 	server.sin_family = AF_INET;
 	server.sin_port = htons(port);
 	server.sin_addr.s_addr = INADDR_ANY;
 
 
-	//binds the socket with the sockaddr_in struct previously filled
+//binds the socket with the sockaddr_in struct previously filled
 	if ((control = bind(servsock, (struct sockaddr*)&server, sizeof(server)))==-1){
 		puts("Could not Bind socket");
 		exit(EXIT_FAILURE);
@@ -212,7 +241,7 @@ void* func_t_1 () {
 
 	while(com_res != QUIT){
 	
-		//waits for connections, changing both servsock and stdin to NONBLOCK
+//waits for connections, changing both servsock and stdin to NONBLOCK
 		length = sizeof(client);
 		puts("\033[1;34mWaiting for incoming calls.....\033[0m");
 		noBlockInput();
@@ -222,26 +251,26 @@ void* func_t_1 () {
 		checkForCommand(sendBuf);
 		}
 
-		//Checks if the user selected the "quit" option
+//Checks if the user selected the "quit" option
 		if(com_res == QUIT)
 			break;
 
-		//clears the screen
+//clears the screen
 		printf("\033[2J");
 		for(k = 0; k < ts.ws_row; k++)
 			printf("%s", "\033[A");
 			
-		//Reset stdin to BLOCKING MODE
+//Reset stdin to BLOCKING MODE
 		resetBlockInput();
 	
-		//Gets caller's IP and name 
+//Gets caller's IP and name 
 		callingIP = inet_ntoa(client.sin_addr);
 		read(sock_a, recvBuf, DIM);
 		strcpy(callingID, recvBuf);
 		recvBuf[0] = '\0';
 		stampaHeader();
 
-		//Asks the user if she/he wants to accept the incoming call
+//Asks the user if she/he wants to accept the incoming call
 		com_res = 0;	
 		printf("Do you want to accept the incoming call?\n");
 		while (com_res == 0) {
@@ -250,19 +279,20 @@ void* func_t_1 () {
 			sendBuf[0] = '\0';
 		}
 		if(com_res == ACCEPT){
-	
-			//change the communicating socket and STDIN to NONBLOCKING mode
+			
+//change the communicating socket and STDIN to NONBLOCKING mode
 			noBlockSocket(sock_a);
 			noBlockInput();
 	
 			inchat = 1;
 			raise(SIGWINCH);
-	
-			while(!(com_res < 0)){
+			
+//Chat loop
+			while(!(com_res < 0)){				
+			
 				rN = read(sock_a, recvBuf, DIM);
 				if(rN > 0){
-					printRecvUp(recvBuf);
-					row_count++;
+					printRecvUp(recvBuf, strlen(recvBuf));
 					recvBuf[0] = '\0';
 				}
 				if((fgets(sendBuf, DIM, stdin)) != NULL) {
@@ -270,14 +300,14 @@ void* func_t_1 () {
 						com_res = command(sendBuf);
 						sendBuf[0] = '\0';
 					}else{
-						printSendUp(sendBuf);
+						printf("\033[2K");
+						printSendUp(sendBuf, strlen(sendBuf));
 						write(sock_a, sendBuf, DIM);
 						sendBuf[0] = '\0';
-						row_count++;
 					}
 				}
 		
-				if(row_count == ts.ws_row -4){
+				if(row_count == ts.ws_row -3){
 					stampaHeader();
 				}
 	
@@ -300,7 +330,7 @@ int main(int argc, char*argv[]){
 	int retT1;
 	int k;
 
-	//this struct is used to store the dimensions (rows/col) of the terminal window
+//this struct is used to store the dimensions (rows/col) of the terminal window
 	ioctl(0, TIOCGWINSZ, &ts);
 	signal(SIGWINCH, sigwinch_handler);
 	row_count = 0;
@@ -315,7 +345,7 @@ int main(int argc, char*argv[]){
 	if (retT1 != 0)
 		puts("Couldn't create the thread!");
 		
-	//This loop ends when the user input the ::q command
+//This loop ends when the user input the ::q command
 	while(com_res != QUIT);
 	printf("\033[1;31mQuitting....\033[0m\n");
 	sleep(2);
