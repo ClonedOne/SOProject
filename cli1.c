@@ -32,6 +32,82 @@ int r;
 
 
 
+//Clear Screen
+void clearS (){
+	printf("\033[2J\033[H\033[A");
+}
+
+
+//Client thread
+//This thread connects to the server and dwonload the clients list
+void* func_t_2 (){
+
+	int sock;
+	int dest_file;
+	int r_size;
+	int control;
+	int length;
+	char* fd_name;
+	char buff[DIM];
+	struct sockaddr_in client;
+	
+	fd_name = "listinaD.txt";
+
+//Creates the new socket to communicate with server
+	if ((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1){
+		perror("Could not Open socket");
+		exit(EXIT_FAILURE);
+	}
+	puts("We are fetching the cleints list\n");
+
+//fills out the sockaddr struct
+	client.sin_family = AF_INET;
+	client.sin_port = htons(5000);
+	if (inet_aton("127.0.0.1", &client.sin_addr) == 0) {
+		perror("Address to network conversion error");
+	}
+	
+//Creates the destination file
+	if ((dest_file = open(fd_name, O_WRONLY|O_CREAT|O_TRUNC,0660)) == -1){
+		perror("error creating destination file");
+	}
+	
+//Connects to the server
+	if ((connect(sock, (struct sockaddr *)&client, sizeof(client))) == -1){
+	perror("couldn't connect");
+	}
+	
+	clearS ();
+	
+	puts("We are fetching the clients list\n");
+	
+	int size;
+	do {
+		if((size = read(sock, buff, DIM)) == -1){
+			perror("read error");
+		}
+		if (size > 0)
+			printf("%s\n",buff);
+		if((write(dest_file, buff, size)) == -1){
+			perror("write error");
+		}
+	}while(size > 0);
+	
+	close(dest_file);
+}
+
+
+//Handler for the SIGUSR1 signal that starts a new thread to ask the server for the clients list
+void sig1_handler (int a) {
+	pthread_t t2;
+	int retT2;
+	
+	retT2 = pthread_create(&t2, NULL, &func_t_2, NULL);
+	if (retT2 != 0)
+		perror("Couldn't create the thread!");
+
+}
+
 
 //Finds out the increment of lines caused by the new string
 int incr (int slen, int nlen){
@@ -77,10 +153,7 @@ void printSendUp(char* sendBuf, int length){
 
 }
 
-//Clear Screen
-void clearS (){
-	printf("\033[2J\033[H\033[A");
-}
+
 
 //Change socket to NONBLOCKING mode
 void noBlockSocket(int ds_sock){	
@@ -134,6 +207,7 @@ int command(char* buf) {
 			puts("::a --> Accept incoming call");
 			puts("::c --> Call someone"); //TO BE DONE
 			puts("::d --> Disconnect from current call");
+			puts("::l --> Get the list of available clients form server");
 			puts("::q --> Quit the program");
 			puts("::h --> Show the HELP");	
 			return 0;
@@ -155,7 +229,14 @@ int command(char* buf) {
 				printf("%s", "\033[A");
 			return DISCONNECT;
 		break;
-	
+		
+		case 'L':		
+		case 'l':
+			raise(SIGUSR1);
+			signal(SIGUSR1, sig1_handler);
+			return 0;
+		break;
+			
 		case 'Q':
 		case 'q':
 			return QUIT;
@@ -174,7 +255,7 @@ void sigwinch_handler (int a) {
 	signal(SIGWINCH, sigwinch_handler);
 	ioctl(0, TIOCGWINSZ, &ts);
 	if(inchat == 1){
-//PROBLEM: when the resizing is downward the screen does not scroll down to compensate
+//PROBLEM: when resizing downward the screen does not scroll down to compensate
 		stampaHeader();
 	}
 }
@@ -322,7 +403,7 @@ void* func_t_1 () {
 	close(servsock);
 }
 
-void* func_t_2 (){}
+
 
 int main(int argc, char*argv[]){
 
@@ -333,6 +414,7 @@ int main(int argc, char*argv[]){
 //this struct is used to store the dimensions (rows/col) of the terminal window
 	ioctl(0, TIOCGWINSZ, &ts);
 	signal(SIGWINCH, sigwinch_handler);
+	signal(SIGUSR1, sig1_handler);
 	row_count = 0;
 
 	printf("\033[2J");
