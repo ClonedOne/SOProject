@@ -30,16 +30,13 @@ hash(unsigned char *str)
 
     return (hash);
 }
-/*int hash(char* key)
-{
-	return ((int)atoi(*key)+3)%(hashmap_size);
-}*/
+
+
 //Increases the memory allocated for the hashmap
 void mem_refresh()
 {
 	hashmap_size=hashmap_size*2;
 	first_key=(key*)realloc(first_key,hashmap_size);
-	//values=(value*)realloc(first_value,hashmap_size+mem);
 }
 
 void put(char* username, char* ip, char* status)
@@ -115,17 +112,32 @@ void put(char* username, char* ip, char* status)
 	printf("%d\n\n",probes);
 	
 	keypointer=first_key;
-	/*printf("first key: %d\n",first_key);
-	printf("keypointer: %d\n",keypointer);*/
-	//snprintf("%d\n",p);
 	
-	
-	//Dinamycally increases the memory allocated for the hasmap
-	/*key="ehi";
-	key++;
-	key="bella";
-	key++;
-	key=user;*/
+}
+
+//Returns a pointer to the value of the given key. Returns NULL if the given key doesn't exist.
+value* get(char* given_key)
+{
+	keypointer=first_key;
+	int found=-1;
+	value* result=(value*)malloc(sizeof(value));
+	while(found==-1 && keypointer<first_key+hashmap_size*sizeof(key))
+	{
+		if((*keypointer).keyname!=NULL)
+		{
+			puts("OLE");
+			if(strcmp((*keypointer).keyname,given_key)==0)
+			{
+				puts("FOUND YA!");
+				*result = *((*keypointer).value);
+				found=1;
+			}
+		}
+		keypointer+=sizeof(key);
+	}
+	if(found==-1)
+		result=NULL;
+	return result;
 }
 
 //Mostra l'hashmap
@@ -153,7 +165,7 @@ void show()
 int main()
 {
 	create();
-	put("zio","1.1.1.1","off");
+	/*put("zio","1.1.1.1","off");
 	put("alex","2.2.2.2","off");
 	put("nope","2.2.2.2","off");
 	put("zeta","2.2.2.2","off");
@@ -183,7 +195,7 @@ int main()
 	put("alex","2.2.2.2","off");
 	put("nope","2.2.2.2","off");
 	put("zeta","2.2.2.2","off");
-	put("uncle","2.2.2.2","off");
+	put("uncle","2.2.2.2","off")/
 	put("vega","1.1.1.1","off");
 	put("zio","2.2.2.2","off");
 	put("vvvvvv","2.2.2.2","on");
@@ -196,7 +208,7 @@ int main()
 	put("alex","2.2.2.2","off");
 	put("nope","2.2.2.2","off");
 	put("zeta","2.2.2.2","off");
-	put("uncle","2.2.2.2","off");
+	put("uncle","2.2.2.2","off");*/
 	put("vega","1.1.1.1","off");
 	put("zio","2.2.2.2","off");
 	put("vvvvvv","2.2.2.2","on");
@@ -205,7 +217,50 @@ int main()
 	put("scadente","2.2.2.2","on");
 	put("lol","2.2.2.2","on");
 	put("zio","2.2.2.2","on");
+	puts("------------TEST FUNZIONE SHOW------------");
 	show();
+	puts("------------TEST FUNZIONE GET------------");
+	value* firstValue= get("alex");
+	value* secondValue= get("zio");
+	value* thirdValue= get("nope");
+	value* fourthValue= get("vega");
+	puts("CHIAVE1: alex");
+	if(firstValue==NULL)
+		puts("NULL");
+	else
+	{
+		puts((*firstValue).user);
+		puts((*firstValue).ip);
+		puts((*firstValue).status);
+	}
+	puts("CHIAVE2: zio");
+	if(secondValue==NULL)
+		puts("NULL");
+	else
+	{
+		puts((*secondValue).user);
+		puts((*secondValue).ip);
+		puts((*secondValue).status);
+	}
+	puts("CHIAVE3: nope");
+	if(thirdValue==NULL)
+		puts("NULL");
+	else
+	{
+		puts((*thirdValue).user);
+		puts((*thirdValue).ip);
+		puts((*thirdValue).status);
+	}
+	puts("CHIAVE4: vega");
+	if(fourthValue==NULL)
+		puts("NULL");
+	else
+	{
+		puts((*fourthValue).user);
+		puts((*fourthValue).ip);
+		puts((*fourthValue).status);
+	}
+	free(first_key);
 
 	
 	
