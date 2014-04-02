@@ -22,6 +22,11 @@ void main() {
 	int cli_sock;
 	int rval;
 	int length;
+	int control;
+	int src_file;
+	int r_size;
+	char buff[DIM];
+	char f_name[DIM];
 	struct sockaddr_in server;
 	struct sockaddr client;
 	
@@ -37,7 +42,7 @@ void main() {
 
 //fills in the sockaddr struct 
 	server.sin_family = AF_INET;
-	server.sin_port = htons(4000);
+	server.sin_port = htons(5000);
 	server.sin_addr.s_addr = INADDR_ANY;
 
 //binds the socket with the sockaddr_in struct previously filled
@@ -54,8 +59,31 @@ void main() {
 	}
 	puts("The process is now listening");
 
+//asks the user for the list file name and opens it
+	while(control != 1){
+		puts("Please insert the name of the list file");
+		fgets(f_name, DIM, stdin);
+		int slen = strlen(f_name);
+		f_name[slen-1] = '\0';
+		if ((src_file = open(f_name, O_RDONLY)) == -1) {
+			printf("Couldn not open file\n");
+		}else
+			control = 1;
+	}
+	
+	length = sizeof(client);
+	
+//accept incoming connections
+	while ((cli_sock = accept(serv_sock, &client, & length)) == -1);
+	
+	do {
+		if ((r_size = read(src_file, buff, DIM)) == -1){
+			perror("Read error");
+		}
+		if ((control = write(cli_sock, buff, r_size)) == -1){
+			perror("Write error");
+		}
 
-
-
+	}while (r_size > 0);
 
 }
