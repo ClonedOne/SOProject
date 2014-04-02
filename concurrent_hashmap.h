@@ -22,12 +22,8 @@ typedef struct
 } keytovalue;*/
 
 
-key* first_key;
-value* first_value;
-key* keypointer;
-value* values;
-int hashmap_size;
-int entry_count;
+
+
 
 
 
