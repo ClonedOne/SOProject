@@ -1,6 +1,7 @@
 #define HASHMAP_INIT_SIZE 10
 #define INCREASE_MEMORY 1
-
+#define SEMAPHORE_KEY 30
+#define SEMAPHORE_SIZE 1
 
 
 typedef struct 
@@ -16,10 +17,6 @@ typedef struct
 	value* value;
 } key;
 
-/*typedef struct
-{
-	value* value;
-} keytovalue;*/
 
 
 

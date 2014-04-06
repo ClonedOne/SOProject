@@ -1,6 +1,9 @@
 #include "concurrent_hashmap.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
 
 key* first_key;
 value* first_value;
@@ -8,13 +11,19 @@ key* keypointer;
 value* values;
 key sentinel_key;
 char* sentinel;
-int hashmap_size;
-int entry_count;
+int hashmap_size,entry_count,ds_sem;
+struct sembuf oper;
 
 
 void create()
 {
-		
+	//Creates semaphore for concurrent access
+	ds_sem = semget(SEMAPHORE_KEY,SEMAPHORE_SIZE,IPC_CREAT|IPC_EXCL|0666);
+	if(ds_sem==-1)
+	{
+		puts("Fallimento durante la creazione del semaforo");
+		exit(-1);
+	}	
 	first_key=(key*)malloc(sizeof(key)*HASHMAP_INIT_SIZE);
 	//Initialize the sentinel key for delection of old entries
 	sentinel=(char*)malloc(strlen("SENTINEL")+1);
@@ -54,6 +63,16 @@ void mem_refresh()
 
 void put(char* username, char* ip, char* status)
 {
+	int sem_check;
+	oper.sem_op=0;
+	oper.sem_num=0;
+	oper.sem_flg=0;
+	sem_check=semop(ds_sem,&oper,1);
+	if(sem_check==-1)
+	{
+		puts("Errore durante l'operazione di sincronizzazione sul semaforo");
+		exit(-1);
+	}
 	key* new_key=malloc(sizeof(key));
 	if(entry_count>hashmap_size*0.7)
 		mem_refresh();
@@ -118,6 +137,14 @@ void put(char* username, char* ip, char* status)
 	
 	keypointer=first_key;
 	
+	oper.sem_op=-1;
+	sem_check=semop(ds_sem,&oper,1);
+	if(sem_check==-1)
+	{
+		puts("Errore durante l'operazione di decremento del semaforo");
+		exit(-1);
+	}
+	
 }
 
 //Returns a pointer to the value of the given key. Returns NULL if the given key doesn't exist.
@@ -125,10 +152,23 @@ value* get(char* given_key)
 {
 		keypointer=first_key;
 
+		int sem_check;
+		oper.sem_op=0;
+		oper.sem_num=0;
+		oper.sem_flg=0;
+		sem_check=semop(ds_sem,&oper,1);
+		if(sem_check==-1)
+		{
+			puts("Errore durante l'operazione di sincronizzazione sul semaforo");
+			exit(-1);
+		}
+		
+	
+		
 		value* result=(value*)malloc(sizeof(value));
 		int found=-1;
 		int probes=0;	//Counter of probes to insert the key
-	
+
 	
 		//Creates the hashcode for the new entry
 		int hashCode=hash(given_key)%hashmap_size;
@@ -171,6 +211,18 @@ value* get(char* given_key)
 		if(found==-1)
 			result=NULL;
 		keypointer=first_key;
+		
+		oper.sem_op=0;
+		oper.sem_num=-1;
+		oper.sem_flg=0;
+		sem_check=semop(ds_sem,&oper,1);
+		if(sem_check==-1)
+		{
+			puts("Errore durante l'operazione di sincronizzazione sul semaforo");
+			exit(-1);
+		}
+		
+		
 		return result;
 }
 
@@ -179,7 +231,19 @@ value* get(char* given_key)
 value* delete(char* given_key)
 {
 		keypointer=first_key;
-
+		
+		int sem_check;
+		oper.sem_op=0;
+		oper.sem_num=0;
+		oper.sem_flg=0;
+		sem_check=semop(ds_sem,&oper,1);
+		if(sem_check==-1)
+		{
+			puts("Errore durante l'operazione di sincronizzazione sul semaforo");
+			exit(-1);
+		}
+		
+		
 		value* result=(value*)malloc(sizeof(value));
 		int found=-1;
 		int probes=0;	//Counter of probes to insert the key
@@ -227,6 +291,16 @@ value* delete(char* given_key)
 		if(found==-1)
 			result=NULL;
 		keypointer=first_key;
+		
+		oper.sem_op=0;
+		oper.sem_num=0;
+		oper.sem_flg=0;
+		sem_check=semop(ds_sem,&oper,1);
+		if(sem_check==-1)
+		{
+			puts("Errore durante l'operazione di sincronizzazione sul semaforo");
+			exit(-1);
+		}
 		return result;
 }
 
@@ -301,7 +375,7 @@ int main()
 	put("zeta","2.2.2.2","off");
 	put("uncle","2.2.2.2","off");
 	put("vega","1.1.1.1","off");
-	put("zio","2.2.2.2","off");*/
+	put("zio"a,"2.2.2.2","off");*/
 	put("vvvvvv","2.2.2.2","on");
 	put("asd","2.2.2.2","on");
 	put("sev","1.1.1.1","on");
