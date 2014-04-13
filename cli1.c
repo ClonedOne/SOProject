@@ -27,8 +27,12 @@ char* callingIP;
 char callingID[DIM];
 int row_count;
 int inchat;
+int called;
 int com_res;
 int r;
+
+
+
 
 
 
@@ -110,14 +114,13 @@ void sig1_handler (int a) {
 
 
 //Finds out the increment of lines caused by the new string
+//"1" is used to compensate for strings of the exact length of the terminal
 int incr (int slen, int nlen){
 	int ret, temp;
 	temp = slen + nlen - 1;
-//"1" is used to compensate for string of the exact length of the terminal
 	if(temp < 0)
 		temp = 0;
 	ret = (temp/ts.ws_col) + 1;
-	//row_count += ret;
 	return ret;
 }
 
@@ -222,6 +225,8 @@ int command(char* buf) {
 		
 		case 'D':
 		case 'd':
+			if (called == 0)
+				return 0;
 			puts("Disconnecting...");
 			sleep(1);
 			printf("\033[2J");
@@ -258,6 +263,7 @@ void sigwinch_handler (int a) {
 //PROBLEM: when resizing downward the screen does not scroll down to compensate
 		stampaHeader();
 	}
+
 }
 
 
@@ -272,6 +278,40 @@ void checkForCommand(char* sendBuf) {
 }
 
 
+
+//Chat loop function
+void chat(int* sock, char sendBuf[], char recvBuf[]) {
+	int rN;
+	int sock_a = *sock;
+	//char* sendBuf = *send;
+	//char* recvBuf = *recv;
+
+	while(!(com_res < 0)){				
+		rN = read(sock_a, recvBuf, DIM);
+		if(rN > 0){
+			printRecvUp(recvBuf, strlen(recvBuf));
+			recvBuf[0] = '\0';
+		}
+		if((fgets(sendBuf, DIM, stdin)) != NULL) {
+			if(sendBuf[0] == ':' && sendBuf[1] == ':') {
+				com_res = command(sendBuf);
+				sendBuf[0] = '\0';
+			}else{
+				printf("\033[2K");
+				printSendUp(sendBuf, strlen(sendBuf));
+				write(sock_a, sendBuf, DIM);
+				sendBuf[0] = '\0';
+				}
+			}
+		
+			if(row_count == ts.ws_row -3){
+				stampaHeader();
+			}
+		}
+}
+
+
+
 //This thread manages incoming connections
 void* func_t_1 () {
 
@@ -279,8 +319,6 @@ void* func_t_1 () {
 	int sock_a;
 	int control;
 	int length;
-	int rN;
-	int wN;
 	int k;
 	struct sockaddr_in server;
 	struct sockaddr_in client;
@@ -353,6 +391,7 @@ void* func_t_1 () {
 
 //Asks the user if she/he wants to accept the incoming call
 		com_res = 0;	
+		called = 1;
 		printf("Do you want to accept the incoming call?\n");
 		while (com_res == 0) {
 			fgets(sendBuf, DIM, stdin);
@@ -369,35 +408,14 @@ void* func_t_1 () {
 			raise(SIGWINCH);
 			
 //Chat loop
-			while(!(com_res < 0)){				
-			
-				rN = read(sock_a, recvBuf, DIM);
-				if(rN > 0){
-					printRecvUp(recvBuf, strlen(recvBuf));
-					recvBuf[0] = '\0';
-				}
-				if((fgets(sendBuf, DIM, stdin)) != NULL) {
-					if(sendBuf[0] == ':' && sendBuf[1] == ':') {
-						com_res = command(sendBuf);
-						sendBuf[0] = '\0';
-					}else{
-						printf("\033[2K");
-						printSendUp(sendBuf, strlen(sendBuf));
-						write(sock_a, sendBuf, DIM);
-						sendBuf[0] = '\0';
-					}
-				}
-		
-				if(row_count == ts.ws_row -3){
-					stampaHeader();
-				}
-	
-			}
+			chat(&sock_a, sendBuf, recvBuf);
 		}
 		else if (com_res != QUIT){
 			close(sock_a);
 			puts("Call refused");
 			com_res = 0;
+			inchat = 0;
+			called = 0;
 		}
 	}
 	close(servsock);
