@@ -294,6 +294,14 @@ int command(char* buf) {
 			return ACCEPT;
 		break;
 		
+		case 'C':
+		case 'c':
+			if (called == 1 || calling == 1){
+			//erease line?
+			}
+			else{
+				spwanT3();
+			}
 		
 		case 'D':
 		case 'd':
