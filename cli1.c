@@ -25,12 +25,57 @@ The goal of all of it is just to create a sinchronous communication channel betw
 struct winsize ts;
 char* callingIP; //IP address of the caller
 char callingID[DIM]; //User Name of the caller
+char userName [DIM]; //My User Name
+char userPwd [DIM]; //My Password
 int row_count; //number of rows of the terminal window
 int inchat; //flag that shows that client is currently chatting
 int called; //flag that shows that client is currently being called
+int calling; //flag that shows that client is currently calling someone
 int com_res; //store the result of the command function
 int r;
-pthread_t t1, t2; //thread handles
+pthread_t t1, t2, t3; //thread handles
+
+
+
+
+//this thread is used to connect to other clients
+void* func_t_3() {
+	
+	calling = 1;
+	int sock;
+	int length;
+	int res;
+	struct sockaddr_in client;
+	struct hostent *hp;
+	
+//fills up socket information
+	ds_sock = socket (AF_INET, SOCK_STREAM, 0);
+	client.sin_family = AF_INET;
+	client.sin_port = htons(4000);
+	
+	if ((hp = gethostbyname("localhost")) == NULL){
+		perror("Couldn't find Localhost");
+	}
+	
+	bcopy(hp->h_addr, &client.sin_addr, hp->h_length);
+	
+//try to connect
+	if (connect(ds_sock,(struct sockaddr *)&client,sizeof(client)) == -1)
+		perror("Couldn't connect");
+	
+//sends userName to the called client
+	write(ds_sock, userName, strlen(name));
+
+
+
+
+
+
+}
+
+
+
+
 
 
 //check if the string contains unacceptable characters
@@ -53,6 +98,16 @@ void spawnT2 () {
 	int retT2;
 	retT2 = pthread_create(&t2, NULL, &func_t_2, NULL);
 	if (retT2 != 0)
+		perror("Couldn't create the thread!");
+
+}
+
+
+//Spawns thread 3 for client/client communications
+void spawnT3 () {
+	int retT3;
+	retT3 = pthread_create(&t3, NULL, &func_t_3, NULL);
+	if (retT3 != 0)
 		perror("Couldn't create the thread!");
 
 }
@@ -395,7 +450,6 @@ void* func_t_1 () {
 		length = sizeof(client);
 		puts("Type '::h' for HELP\n\033[1;34mWaiting for incoming calls.....\033[0m");
 		noBlockInput();
-		//checkForCommand(sendBuf);
 		noBlockSocket(servsock);
 		while ((sock_a = accept(servsock, (struct sockaddr *)&client, &length)) == -1 && com_res != QUIT){
 			if((fgets(sendBuf, DIM, stdin)) != NULL)
@@ -460,6 +514,7 @@ int main(int argc, char*argv[]){
 
 	int retT1;
 	int k;
+	calling = 0;
 
 //this struct is used to store the dimensions (rows/col) of the terminal window
 	ioctl(0, TIOCGWINSZ, &ts);
@@ -471,6 +526,21 @@ int main(int argc, char*argv[]){
 	
 	
 	puts("Welcome! We are now starting the service!");
+
+	do{
+		userName[0] = '\0';
+		puts("Please insert your User Name");
+		fgets(userName, DIM, stdin);
+	} while (acceptableString(userName) == 0);
+	userName[strlen(userName) -1] = '\0';
+	
+	do{
+		userPwd[0] = '\0';
+		puts("Please insert your Password");
+		fgets(userPwd, DIM, stdin);
+	} while (acceptableString(userPwd) == 0);
+	userPwd[strlen(userPwd) -1] = '\0';
+	
 	retT1 = pthread_create(&t1, NULL, &func_t_1, NULL);
 	if (retT1 != 0)
 		puts("Couldn't create the thread!");

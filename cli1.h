@@ -79,6 +79,9 @@ void* func_t_1 ();
 int acceptableString(char *s);
 
 
+//Spawns thread 3 for client/client communications
+void spawnT3 ();
+
 
 
 

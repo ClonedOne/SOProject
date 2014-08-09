@@ -9,8 +9,10 @@ string = malloc(50);
 fgets(string, 50, stdin);
 int o;
 o=noEscape(string);
-printf("%d",o);
-
+printf("%d\n",o);
+string[strlen(string)-1] = '\0';
+printf("%s", string);
+printf("loooolz");
 
 
 
