@@ -16,24 +16,46 @@ The goal of all of it is just to create a sinchronous communication channel betw
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#include "cli1.h"
 
-#define DIM 1024
-#define ACCEPT 1
-#define DISCONNECT -2
-#define QUIT -1
+
+#define DEBUG
+
 
 struct winsize ts;
-char* callingIP;
-char callingID[DIM];
-int row_count;
-int inchat;
-int called;
-int com_res;
+char* callingIP; //IP address of the caller
+char callingID[DIM]; //User Name of the caller
+int row_count; //number of rows of the terminal window
+int inchat; //flag that shows that client is currently chatting
+int called; //flag that shows that client is currently being called
+int com_res; //store the result of the command function
 int r;
+pthread_t t1, t2; //thread handles
+
+
+//check if the string contains unacceptable characters
+int acceptableString(char *s){
+	int i = 0;
+	int len=strlen(s)-1;
+	for(i = 0; i < len; i++){
+		if(!(s[i] >= 32 && s[i] < 127))
+			return 0;
+			
+	}
+	return 1;
+}
 
 
 
 
+//Spawns threead 2 for server/client communications
+void spawnT2 () {
+	int retT2;
+	retT2 = pthread_create(&t2, NULL, &func_t_2, NULL);
+	if (retT2 != 0)
+		perror("Couldn't create the thread!");
+
+}
 
 
 //Clear Screen
@@ -48,21 +70,22 @@ void* func_t_2 (){
 
 	int sock;
 	int dest_file;
-	int r_size;
-	int control;
-	int length;
 	char* fd_name;
 	char buff[DIM];
 	struct sockaddr_in client;
 	
 	fd_name = "listinaD.txt";
+	
+	
 
 //Creates the new socket to communicate with server
 	if ((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1){
 		perror("Could not Open socket");
 		exit(EXIT_FAILURE);
 	}
-	puts("We are fetching the cleints list\n");
+#ifdef DEBUG
+	puts("We are fetching the clients list\n");
+#endif
 
 //fills out the sockaddr struct
 	client.sin_family = AF_INET;
@@ -77,14 +100,16 @@ void* func_t_2 (){
 	}
 	
 //Connects to the server
-	if ((connect(sock, (struct sockaddr *)&client, sizeof(client))) == -1){
+	if ((connect(sock, (struct sockaddr*) &client, sizeof(client))) == -1){
 	perror("couldn't connect");
 	}
 	
 	clearS ();
 	
+#ifdef DEBUG	
 	puts("We are fetching the clients list\n");
-	
+#endif
+
 	int size;
 	do {
 		if((size = read(sock, buff, DIM)) == -1){
@@ -101,19 +126,9 @@ void* func_t_2 (){
 }
 
 
-//Handler for the SIGUSR1 signal that starts a new thread to ask the server for the clients list
-void sig1_handler (int a) {
-	pthread_t t2;
-	int retT2;
-	
-	retT2 = pthread_create(&t2, NULL, &func_t_2, NULL);
-	if (retT2 != 0)
-		perror("Couldn't create the thread!");
-
-}
 
 
-//Finds out the increment of lines caused by the new string
+//Finds out the increment of lines caused by the new message string
 //"1" is used to compensate for strings of the exact length of the terminal
 int incr (int slen, int nlen){
 	int ret, temp;
@@ -145,8 +160,10 @@ void printRecvUp(char* recvBuf, int length) {
 void printSendUp(char* sendBuf, int length){
 	int k;	
 	int written_rows;
+	int i;
 	written_rows = incr(length, strlen("You"));
-	printf("\033[A\033[2K");
+	for (i = 0; i < written_rows; i++)
+		printf("\033[A\033[2K");
 	printf("\033[s");
 	printf("\033[%d;1H", row_count);
 	printf("\033[1;34m%s: \033[0m", "You");
@@ -237,8 +254,7 @@ int command(char* buf) {
 		
 		case 'L':		
 		case 'l':
-			raise(SIGUSR1);
-			signal(SIGUSR1, sig1_handler);
+			spawnT2();
 			return 0;
 		break;
 			
@@ -268,13 +284,21 @@ void sigwinch_handler (int a) {
 
 
 //Checks for incoming commands
-void checkForCommand(char* sendBuf) {
-	if((fgets(sendBuf, DIM, stdin)) != NULL) {
-		if(sendBuf[0] == ':' && sendBuf[1] == ':') {
-			com_res = command(sendBuf);
-			sendBuf[0] = '\0';
-		}
+int checkForCommand(char* sendBuf) {
+
+//-1 is used to compensate for the newline character
+	int len = strlen(sendBuf) -1;
+	
+	if(len == 3 && sendBuf[0] == ':' && sendBuf[1] == ':') {
+		com_res = command(sendBuf);
+		sendBuf[0] = '\0';
+		return 1;
 	}
+	else if (inchat == 0){
+		puts("Type '::h' for HELP");
+	}
+
+	return 0;
 }
 
 
@@ -283,8 +307,6 @@ void checkForCommand(char* sendBuf) {
 void chat(int* sock, char sendBuf[], char recvBuf[]) {
 	int rN;
 	int sock_a = *sock;
-	//char* sendBuf = *send;
-	//char* recvBuf = *recv;
 
 	while(!(com_res < 0)){				
 		rN = read(sock_a, recvBuf, DIM);
@@ -293,21 +315,23 @@ void chat(int* sock, char sendBuf[], char recvBuf[]) {
 			recvBuf[0] = '\0';
 		}
 		if((fgets(sendBuf, DIM, stdin)) != NULL) {
-			if(sendBuf[0] == ':' && sendBuf[1] == ':') {
-				com_res = command(sendBuf);
-				sendBuf[0] = '\0';
-			}else{
-				printf("\033[2K");
-				printSendUp(sendBuf, strlen(sendBuf));
-				write(sock_a, sendBuf, DIM);
-				sendBuf[0] = '\0';
-				}
+			if(acceptableString(sendBuf) == 1){
+				if(checkForCommand(sendBuf) != 1){
+					printf("\033[2K");
+					printSendUp(sendBuf, strlen(sendBuf));
+					write(sock_a, sendBuf, DIM);
+					sendBuf[0] = '\0';
+				}	
 			}
-		
-			if(row_count == ts.ws_row -3){
-				stampaHeader();
+			else{
+				printSendUp(ESC_ERR, ESC_ERR_LEN);
+				sendBuf[0] = '\0';
 			}
 		}
+		if(row_count >= ts.ws_row -3){
+				stampaHeader();
+		}
+	}
 }
 
 
@@ -325,17 +349,20 @@ void* func_t_1 () {
 	short port = 4000;
 	char sendBuf[DIM];
 	char recvBuf[DIM];
+
 	
-	
+#ifdef DEBUG	
 	puts("We are starting the receiving thread");
+#endif	
 	
 //open the server socket to accept connections
 	if ((servsock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1){
 		puts("Could not Open socket");
 		exit(EXIT_FAILURE);
 	}
+#ifdef DEBUG
 	puts("We created the new socket");
-
+#endif
 
 //fills up the sockaddr_in struct accepting connections from anyone
 //to be checked for security reasons 
@@ -350,24 +377,29 @@ void* func_t_1 () {
 		puts("Could not Bind socket");
 		exit(EXIT_FAILURE);
 	}
+#ifdef DEBUG
 	puts("The binding has been done");
+#endif
 
 	if((control = listen(servsock, 5)) == -1){
 		puts("Could not Listen on socket");
 		exit(EXIT_FAILURE);
 	}
+#ifdef DEBUG
 	puts("The process is now listening");
+#endif
 
 	while(com_res != QUIT){
 	
 //waits for connections, changing both servsock and stdin to NONBLOCK
 		length = sizeof(client);
-		puts("\033[1;34mWaiting for incoming calls.....\033[0m");
+		puts("Type '::h' for HELP\n\033[1;34mWaiting for incoming calls.....\033[0m");
 		noBlockInput();
-		checkForCommand(sendBuf);
+		//checkForCommand(sendBuf);
 		noBlockSocket(servsock);
 		while ((sock_a = accept(servsock, (struct sockaddr *)&client, &length)) == -1 && com_res != QUIT){
-		checkForCommand(sendBuf);
+			if((fgets(sendBuf, DIM, stdin)) != NULL)
+				checkForCommand(sendBuf);
 		}
 
 //Checks if the user selected the "quit" option
@@ -394,8 +426,8 @@ void* func_t_1 () {
 		called = 1;
 		printf("Do you want to accept the incoming call?\n");
 		while (com_res == 0) {
-			fgets(sendBuf, DIM, stdin);
-			com_res = command(sendBuf);
+			if((fgets(sendBuf, DIM, stdin)) != NULL)
+				checkForCommand(sendBuf);
 			sendBuf[0] = '\0';
 		}
 		if(com_res == ACCEPT){
@@ -405,7 +437,8 @@ void* func_t_1 () {
 			noBlockInput();
 	
 			inchat = 1;
-			raise(SIGWINCH);
+			stampaHeader();
+	
 			
 //Chat loop
 			chat(&sock_a, sendBuf, recvBuf);
@@ -425,19 +458,16 @@ void* func_t_1 () {
 
 int main(int argc, char*argv[]){
 
-	pthread_t t1;
 	int retT1;
 	int k;
 
 //this struct is used to store the dimensions (rows/col) of the terminal window
 	ioctl(0, TIOCGWINSZ, &ts);
 	signal(SIGWINCH, sigwinch_handler);
-	signal(SIGUSR1, sig1_handler);
 	row_count = 0;
 
-	printf("\033[2J");
-	for(k = 0; k < ts.ws_row; k++)
-	printf("%s", "\033[A");
+//clear screen
+	clearS();
 	
 	
 	puts("Welcome! We are now starting the service!");
@@ -450,4 +480,5 @@ int main(int argc, char*argv[]){
 	printf("\033[1;31mQuitting....\033[0m\n");
 	sleep(2);
 	clearS();
+	exit(1);
 }

@@ -59,5 +59,6 @@ void main(){
 			buff[0] = '\0';
 		}
 	}
+	close(ds_sock);
 }
 
