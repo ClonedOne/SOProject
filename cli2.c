@@ -56,7 +56,6 @@ void* func_t_3() {
 	resetBlockInput();
 	fgets(callingIP, DIM, stdin);
 	callingIP[strlen(callingIP - 1)] = '\0';
-	printf("chosen ip is %s\n",callingIP);
 	
 //creates the scket
 	if ((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1){
@@ -66,7 +65,7 @@ void* func_t_3() {
 	
 //fills up socket information
 	client.sin_family = AF_INET;
-	client.sin_port = htons(4100);
+	client.sin_port = htons(4000);
 	if (inet_aton(callingIP, &client.sin_addr) == 0) {
 		perror("Address to network conversion error");
 		exit(EXIT_FAILURE);
@@ -443,7 +442,7 @@ void* func_t_1 () {
 	int k;
 	struct sockaddr_in server;
 	struct sockaddr_in client;
-	short port = 4000;
+	short port = 4100;
 	char sendBuf[DIM];
 	char recvBuf[DIM];
 
