@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 void main(){
-
+/*
 char* string;
 string = malloc(50);
 fgets(string, 50, stdin);
@@ -13,8 +13,13 @@ printf("%d\n",o);
 string[strlen(string)-1] = '\0';
 printf("%s", string);
 printf("loooolz");
-
-
+*/
+char* array;
+array = malloc (128);
+fgets (array, 1024, stdin);
+array[strlen(array) - 1] = '\0';
+printf("%s", array);
+printf("loooolz");
 
 }
 
