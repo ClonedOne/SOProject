@@ -50,12 +50,17 @@ void* func_t_3() {
 	char sendBuf[DIM];
 	char recvBuf[DIM];
 	
-
+	resetBlockInput();
+	callingIP[0] = '\0';
+	
 //Ask the user for the target of the connection
 	printf("Please select the user\n");
-	resetBlockInput();
+	
 	fgets(callingIP, DIM, stdin);
-	callingIP[strlen(callingIP - 1)] = '\0';
+	puts("WAT?!?!?");
+	
+	callingIP[strlen(callingIP) - 1] = '\0';
+	
 	printf("chosen ip is %s\n",callingIP);
 	
 //creates the scket

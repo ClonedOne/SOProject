@@ -55,7 +55,7 @@ void* func_t_3() {
 	printf("Please select the user\n");
 	resetBlockInput();
 	fgets(callingIP, DIM, stdin);
-	callingIP[strlen(callingIP - 1)] = '\0';
+	callingIP[strlen(callingIP) - 1] = '\0';
 	
 //creates the scket
 	if ((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1){

@@ -1,0 +1,65 @@
+Specifica Estesa Client
+
+
+Prerequisiti:
+	-Porta 4000 libera
+	-
+
+Chiamata del Client
+	./cli1
+
+
+Comandi Accettati
+	::a --> Accept incoming call
+	::c --> Call someone
+	::d --> Disconnect from current call
+	::l --> Get the list of available clients form server
+	::q --> Quit the program
+	::h --> Show the HELP
+
+
+Attivià Client
+	1) All'attivazione propone all'utente 2 opzioni:
+		-Login al server
+		-Registrazione al servizio
+			a) In caso di registrazione al servizio si invia al server la richiesta di registrazione al servizio
+			b) Si attende l'ok del server
+			c) Si richiede all'utente di inserire uno User Name
+			d) Si invia lo User Name al server che controlla l'univocità
+			e) In caso di controllo non superato si ritorna al punto c)
+			f) Si richiede all'utente di inserire una Password
+			g) Si invia la Password al server
+			h) Si aspetta la conferma di registrazione del server
+	2) Si richiedono User Name e Password all'utente 
+	3) Si inviano i dati utente al server per il controllo di login
+	4) In caso di controllo non superato si ritorna al punto 2)
+	5) Si inizializza la server socket 
+	6) Si notifica al server lo stato di disponibile
+	7) In caso di connessione si richiede all'utente di accettare o rifiutare la chiamata
+	8) In caso di rifiuto della chiamata si torna al punto 6)
+	9) Se la chiamata viene accettata si avvia il protocollo di chat
+		a) Si apre una connessione con il server
+		b) Si notifica al server il cambio di stato da disponibile a occupato
+		c) Si aspetta la notifica del server
+		d) Si chiude la connessione con il server
+		e) Si avvia la routine di chat
+	10) L'utente può interrompere la chiamata in ogni momento, in tal caso si torna al punto 6)
+	11) L'utente può richiedere la lista dei client dispoibili al server in ogni momento in cui non è in chat
+		a) In caso di richiesta della lista si stabilisce una connessione col server
+		b) Si instaura il protocollo di trasferimento della lista
+		c) Ogni entry della lista viene stampata a schermo affinchè l'utente possa leggerla
+		d) Si chiude la connessione con il server e si ritorna allo stato precedente
+	12) In qualunque momento non sia in chat l'utente può provare a contattare un altro Client
+		a) Si apre una connessione con il server
+		b) Si notifica al Server lo stato occupato
+		c) Si chiude la connessione con il server
+		d) Si apre la connessione con l'IP del client selezionato
+		e) Se il client chiamato accetta la chiamata si avvia il protocollo di chat
+		f) Altrimenti si notifica il rifiuto della chiamata all'utente
+		g) Si ritorna al punto 6)
+	
+	
+	
+	
+	
+	
