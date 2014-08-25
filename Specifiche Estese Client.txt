@@ -18,8 +18,19 @@ Comandi Accettati
 	::h --> Show the HELP
 
 
+Comunicazioni con il Server
+	0 = Registrazione nuovo utente
+	1 = Log In di un utente
+	2 = Log Out di un utente
+	3 = Stato Disponibile di un utente
+	4 = Stato Occupato di un utente
+	5 = Richiesta della lista degli utenti attivi
+
+
+
 Attivià Client
-	1) All'attivazione propone all'utente 2 opzioni:
+	1) All'attivazione si apre una connessione permanente con il server su un thread secondario
+	2) Si propongono all'utente 2 opzioni:
 		-Login al server
 		-Registrazione al servizio
 			a) In caso di registrazione al servizio si invia al server la richiesta di registrazione al servizio
@@ -30,33 +41,34 @@ Attivià Client
 			f) Si richiede all'utente di inserire una Password
 			g) Si invia la Password al server
 			h) Si aspetta la conferma di registrazione del server
-	2) Si richiedono User Name e Password all'utente 
-	3) Si inviano i dati utente al server per il controllo di login
-	4) In caso di controllo non superato si ritorna al punto 2)
-	5) Si inizializza la server socket 
-	6) Si notifica al server lo stato di disponibile
+	3) Si richiedono User Name e Password all'utente 
+	4) Si inviano i dati utente al server per il controllo di login
+	5) In caso di controllo non superato si ritorna al punto 3)
+	6) Si inizializza la server socket per accettare connessioni da altri client
 	7) In caso di connessione si richiede all'utente di accettare o rifiutare la chiamata
-	8) In caso di rifiuto della chiamata si torna al punto 6)
+	8) In caso di rifiuto della chiamata si notifica al server lo stato di Disponibile
 	9) Se la chiamata viene accettata si avvia il protocollo di chat
-		a) Si apre una connessione con il server
-		b) Si notifica al server il cambio di stato da disponibile a occupato
-		c) Si aspetta la notifica del server
-		d) Si chiude la connessione con il server
-		e) Si avvia la routine di chat
-	10) L'utente può interrompere la chiamata in ogni momento, in tal caso si torna al punto 6)
+		a) Si notifica al server lo stato di Occupato
+		b) Si avvia la routine di chat
+		c) L'utente può interrompere la chiamata in ogni momento
+	10) Si notifica al server lo stato di disponibile
 	11) L'utente può richiedere la lista dei client dispoibili al server in ogni momento in cui non è in chat
-		a) In caso di richiesta della lista si stabilisce una connessione col server
+		a) Si richiede al server l'invio della lista degli utente
 		b) Si instaura il protocollo di trasferimento della lista
 		c) Ogni entry della lista viene stampata a schermo affinchè l'utente possa leggerla
-		d) Si chiude la connessione con il server e si ritorna allo stato precedente
 	12) In qualunque momento non sia in chat l'utente può provare a contattare un altro Client
-		a) Si apre una connessione con il server
-		b) Si notifica al Server lo stato occupato
-		c) Si chiude la connessione con il server
-		d) Si apre la connessione con l'IP del client selezionato
+		a) Si notifica al Server lo stato Occupato
+		c) Si apre la connessione con l'IP del client selezionato
 		e) Se il client chiamato accetta la chiamata si avvia il protocollo di chat
 		f) Altrimenti si notifica il rifiuto della chiamata all'utente
-		g) Si ritorna al punto 6)
+		g) Si ritorna al punto 10)
+	13) In qualunque momento l'utente può decidere di terminare l'attività del client
+		a) Si chiudono le eventuali comunicazioni in corso
+		b) Si chiudono le eventuali socket utilizzate per le comunicazioni
+		c) Si comunica al Server il LogOut dell'utente
+		d) Si attende il messaggio di conferma del server
+		e) Si chiude la socket con il server
+		f) Si termina il thread main
 	
 	
 	
