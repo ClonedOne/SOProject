@@ -33,7 +33,7 @@ Attività del Server
 	2) Si richiede al sistemista se si desidera effettuare un ripristino degli utenti connessi e degli stati dal file di log
 		a) In caso positivo 
 			- Si procede all'apertura del file di log
-			- Si inizializza l'hashmap
+			- Si inizializza l'hashmap 
 			- Si inseriscono i dati del file di log nell'hashmap
 		b) In caso negativo
 			- Si apre il file di log

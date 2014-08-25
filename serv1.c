@@ -17,6 +17,8 @@
 #define CODA 5
 #define DIM 1024
 #define MAX_PENDING_CONNECTIONS 100
+#define ANSWER_LENGTH 2
+#define LOG_FILE "UsersInfo.txt"
 
 int clientConnection(int* cli_sock)
 {
@@ -27,7 +29,7 @@ int clientConnection(int* cli_sock)
 	char* password;
 	
 	user = malloc(MAX_USERNAME_LENGTH);
-	password=malloc(MAX_PASSWORD_LENGTH);
+	password = malloc(MAX_PASSWORD_LENGTH);
 
 	
 	//Client should login
@@ -56,6 +58,17 @@ int clientConnection(int* cli_sock)
 	
 }
 
+int getAnswer(char* answer)
+{
+	if(strlen(answer)==ANSWER_LENGTH) 
+	{
+		if(answer[0]=='Y')
+			return 1;
+		else if(answer[0]=='N') 
+			return 0;
+	}
+	return -1;
+}
 
 void main() {
 
@@ -67,15 +80,31 @@ void main() {
 	int control;
 	int src_file;
 	int r_size;
+	int ans;
 	char* buff;
 	char f_name[DIM];
+	char* answer;
 	pthread_t* tid;
 	struct sockaddr_in server;
 	struct sockaddr client;
 	
-	
 	puts("Welcome to Such Chatz server!");
 	
+
+	answer=malloc(ANSWER_LENGTH);
+	do{
+		puts("Do you want to restore connected Users from log file?");
+		answer;
+		puts("Please insert your User Name");
+		fgets(answer, ANSWER_LENGTH, stdin);
+	} while (ans = getAnswer(answer)==-1);
+	answer[strlen(answer) -1] = '\0';
+
+	if(ans==1)
+		restoreConnectedUser();
+	else
+		clearLog();
+
 //open the server socket to accept connections
 	if ((serv_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1){
 		perror("Could not Open socket");

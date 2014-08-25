@@ -17,6 +17,7 @@ The goal of all of it is just to create a sinchronous communication channel betw
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include "cli1.h"
+#include "log.h"
 
 
 #define DEBUG
