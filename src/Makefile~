@@ -1,0 +1,19 @@
+CC = gcc
+CFLAGS = -c -Iinclude
+LFLAGS = -o 
+
+all: serv1
+
+serv1: serv1.o concurrent_hashmap.o login_parser.o
+	$(CC) $(LFLAG) -o bin/serv1 -s
+
+serv1.o:  include/concurrent_hashmap.h include/login_parser.h src/serv1.c
+	$(CC) $(CFLAGS) src/serv1.c 
+
+concurrent_hashmap.o: include/concurrent_hashmap.h src/concurrent_hashmap.c 
+	$(CC) $(CFLAGS) src/concurrent_hashmap.c
+
+login_parser.o: include/login_parser.h src/login_parser.c
+	$(CC) $(CFLAGS) src/login_parser.c
+
+
