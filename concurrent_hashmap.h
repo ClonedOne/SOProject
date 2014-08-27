@@ -1,5 +1,5 @@
 #ifndef CONCURRENT_HASHMAP
-#define HASHMAP
+#define CONCURRENT_HASHMAP
 #define HASHMAP_INIT_SIZE 10
 #define INCREASE_MEMORY 1
 #define SEMAPHORE_KEY 30
@@ -21,13 +21,13 @@ typedef struct
 	value* value;
 } key;
 
-void createHashmap();
+key* createHashmap();
 long hash(unsigned char *str);
-void hashmap_mem_refresh();
-void putIntoHashmap(char* username, char* ip, char* status);
-value* getFromHashmap(char* given_key);
-value* deleteFromHashmap(char* given_key);
-void hashmap_show();
+void hashmap_mem_refresh(key* first_key);
+void putIntoHashmap(key* first_key, char* username, char* ip, char* status);
+value* getFromHashmap(key* first_key, char* given_key);
+value* deleteFromHashmap(key* first_key, char* given_key);
+void hashmap_show(key* first_key);
 #endif
 
 

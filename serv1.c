@@ -13,6 +13,7 @@
 #include <pthread.h>
 #include "login_parser.h"
 #include "concurrent_hashmap.h"
+#include "log.h"
 
 
 #define CODA 5
@@ -74,6 +75,7 @@ int getAnswer(char* answer)
 
 
 
+
 int checkUserLogin(char* user, char* password)
 {
 	int found;
@@ -92,8 +94,7 @@ int checkUserLogin(char* user, char* password)
 
 }
 
-
-int main() {
+void main() {
 
 
 	int serv_sock;
@@ -107,6 +108,7 @@ int main() {
 	char* buff;
 	char f_name[DIM];
 	char* answer;
+	key* hashmap;	
 	pthread_t* tid;
 	struct sockaddr_in server;
 	struct sockaddr client;
@@ -124,9 +126,12 @@ int main() {
 	answer[strlen(answer) -1] = '\0';
 
 	if(ans==1)
-		restoreConnectedUsers();
+		hashmap=restoreConnectedUsers();
 	else
+	{
 		clearLog();
+		hashmap=createHashmap();	
+	}
 
 //open the server socket to accept connections
 	if ((serv_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1){

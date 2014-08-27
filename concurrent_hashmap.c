@@ -5,7 +5,7 @@
 #include <sys/ipc.h>
 #include <sys/sem.h>
 
-key* first_key;
+
 value* first_value;
 key* keypointer;
 value* values;
@@ -15,8 +15,9 @@ int hashmap_size,entry_count,ds_sem;
 struct sembuf oper;
 
 
-void create()
+key* createHashmap()
 {
+	key* first_key;
 	//Creates semaphore for concurrent access
 	ds_sem = semget(SEMAPHORE_KEY,SEMAPHORE_SIZE,IPC_CREAT|IPC_EXCL|0666);
 	if(ds_sem==-1)
@@ -35,14 +36,19 @@ void create()
 	keypointer=first_key;
 	//values=(value*)malloc(HASHMAP_INIT_SIZE);
 	
+	#ifdef DEBUG
 	printf("first key: %d\n",first_key);
 	printf("keypointer: %d\n",keypointer);
 	//first_value=values;
+	#endif
 	hashmap_size=HASHMAP_INIT_SIZE;
+	#ifdef DEBUG
 	printf("Hashmap size: %d\n\n",hashmap_size);
+	#endif
+	return first_key;
 }
 
-hash(unsigned char *str)
+long hash(unsigned char *str)
 {
     unsigned long hash = 5381;
     int c;
@@ -55,13 +61,13 @@ hash(unsigned char *str)
 
 
 //Increases the memory allocated for the hashmap
-void mem_refresh()
+void hashmap_mem_refresh(key* first_key)
 {
 	hashmap_size=hashmap_size*2;
 	first_key=(key*)realloc(first_key,hashmap_size*sizeof(key));
 }
 
-void put(char* username, char* ip, char* status)
+void putIntoHashmap(key* first_key, char* username, char* ip, char* status)
 {
 	int sem_check;
 	oper.sem_op=0;
@@ -75,7 +81,7 @@ void put(char* username, char* ip, char* status)
 	}
 	key* new_key=malloc(sizeof(key));
 	if(entry_count>hashmap_size*0.7)
-		mem_refresh();
+		hashmap_mem_refresh(first_key);
 
 	
 	int found=-1;
@@ -87,7 +93,9 @@ void put(char* username, char* ip, char* status)
 	
 	//Creates the hashcode for the new entry
 	int hashCode=hash(username)%hashmap_size;
+	#ifdef DEBUG	
 	printf("hashCode %d\n",hashCode);
+	#endif
 	keypointer=keypointer+hashCode;
 	
 	while(found==-1)
@@ -113,11 +121,13 @@ void put(char* username, char* ip, char* status)
 			//Once the entry has been created, store it in the hashmap
 			*keypointer=*new_key;
 			free(new_key);
+			#ifdef DEBUG
 			printf("key:%s\n",(*keypointer).keyname);
 			printf("ip:%s\n",keypointer->value->ip);
 			printf("keypointer %d\n",keypointer);
 			printf("first key %d\n",first_key);
 			printf("HASHMAP SIZE: %d\n",hashmap_size);
+			#endif
 			entry_count++;
 			keypointer=first_key;
 		}
@@ -130,11 +140,12 @@ void put(char* username, char* ip, char* status)
 		}
 	}
 	//values++;
+	#ifdef DEBUG
 	puts("Numero di probes effettuati:");
 	
 	//Stampa il numero di probes effettuati per l'inserimento
 	printf("%d\n\n",probes);
-	
+	#endif
 	keypointer=first_key;
 	
 	oper.sem_op=-1;
@@ -148,7 +159,7 @@ void put(char* username, char* ip, char* status)
 }
 
 //Returns a pointer to the value of the given key. Returns NULL if the given key doesn't exist.
-value* get(char* given_key)
+value* getFromHashmap(key* first_key, char* given_key)
 {
 		keypointer=first_key;
 
@@ -228,7 +239,7 @@ value* get(char* given_key)
 
 
 //Delete the given key in the hashmap (if exist). Returns a pointer to the removed entry, a NULL pointer if it doesn't exist
-value* delete(char* given_key)
+value* deleteFromHashmap(key* first_key, char* given_key)
 {
 		keypointer=first_key;
 		
@@ -284,9 +295,12 @@ value* delete(char* given_key)
 				keypointer++;
 			}
 		}
+		#ifdef DEBUG
 		puts("Numero di probes effettuati:");
+		
 		//Stampa il numero di probes effettuati per il recupero dell'entry
 		printf("%d\n\n",probes);
+		#endif
 	
 		if(found==-1)
 			result=NULL;
@@ -306,12 +320,15 @@ value* delete(char* given_key)
 
 
 //Mostra l'hashmap
-void show()
+void hashmap_show(key* first_key)
 {
 	keypointer=first_key;
+	
+	
 	puts("Hashmap:");
 	printf("first key: %d\n",first_key);
 	printf("keypointer: %d\n",keypointer);
+	
 	//snprintf("%d\n",p);
 	while(keypointer<first_key+hashmap_size)
 	{
@@ -327,9 +344,9 @@ void show()
 	}
 }
 
-int main()
+/*int main()
 {
-	create();
+	//create();
 	/*put("zio","1.1.1.1","off");
 	put("alex","2.2.2.2","off");
 	put("nope","2.2.2.2","off");
@@ -376,9 +393,9 @@ int main()
 	put("uncle","2.2.2.2","off");
 	put("vega","1.1.1.1","off");
 	put("zio"a,"2.2.2.2","off");*/
-	put("vvvvvv","2.2.2.2","on");
-	put("asd","2.2.2.2","on");
-	put("sev","1.1.1.1","on");
+	//put("vvvvvv","2.2.2.2","on");
+	//put("asd","2.2.2.2","on");
+	//put("sev","1.1.1.1","on");
 	/*put("scadente","2.2.2.2","on");
 	put("lol","2.2.2.2","on");
 	put("zio","2.2.2.2","on");
@@ -386,7 +403,7 @@ int main()
 	show();
 	/*printf("%d\n",sizeof(key));
 	printf("%d\n",((char *)(keypointer+1))-((char*)keypointer));*/
-	puts("------------TEST FUNZIONE GET------------");
+	/*puts("------------TEST FUNZIONE GET------------");
 	value* firstValue= get("alex");
 	value* secondValue= get("zio");
 	value* thirdValue= get("nope");
@@ -465,4 +482,4 @@ int main()
 
 	
 	
-}
+}*/

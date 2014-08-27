@@ -1,4 +1,8 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include "log.h"
+#include "concurrent_hashmap.h"
 
 
 void clearLog()
@@ -7,64 +11,42 @@ void clearLog()
 	fp=fopen(LOG_FILE,"w");
 }
 
-restoreConnectedUsers()
+key* restoreConnectedUsers()
 {
 	//DA FINIRE	
 
 	int fd,found;
 	FILE *fp;
 	
-	char* buf = malloc(MAX_USERNAME_LENGTH+USERNAME_HEADER_LENGTH);
-	char* readUser = malloc(MAX_USERNAME_LENGTH);
-	char* status = malloc(MAX_STATUS_LENGTH);
-	char* ip = malloc(MAX_IP_LENGTH);
+	char* user = (char*) malloc(MAX_USERNAME_LENGTH+USERNAME_HEADER_LENGTH);
+	char* status = (char*) malloc(MAX_STATUS_LENGTH);
+	char* ip = (char*) malloc(MAX_IP_LENGTH);
 	char* separator = malloc(SEPARATOR_LENGTH);
-
+	key* hashmap=createHashmap();
 	
-	fp=fopen(FILENAME,"r");
-
-	found=0;
 	
-	while(fgets(buf,SEPARATOR_LENGTH,fp)==NULL)
+	fp=fopen(LOG_FILE,"r");
+
+	do
 	{
-
-		fgets(buf,MAX_USERNAME_LENGTH+USERNAME_HEADER_LENGTH+2,fp);
-		buf[strlen(buf)-1]='\0';
-		buf+=USERNAME_HEADER_LENGTH;
+		user = malloc(MAX_USERNAME_LENGTH+USERNAME_HEADER_LENGTH);
+		fgets(user,MAX_USERNAME_LENGTH+USERNAME_HEADER_LENGTH+2,fp);
+		user[strlen(user)-1]='\0';
+		user+=USERNAME_HEADER_LENGTH;
 	
+		status=malloc(MAX_STATUS_LENGTH+STATUS_HEADER_LENGTH+2);
+		fgets(status,MAX_STATUS_LENGTH+STATUS_HEADER_LENGTH+2,fp);
+		status[strlen(status)-1]='\0';
+		status+=STATUS_HEADER_LENGTH;
+		
 	
-		strcpy(readUser,buf);
-	
-	
-		if(strcmp(readUser,user)==0)
-		{
-			buf=malloc(MAX_STATUS_LENGTH+STATUS_HEADER_LENGTH+2);
-			fgets(buf,MAX_STATUS_LENGTH+STATUS_HEADER_LENGTH+2,fp);
-			buf[strlen(buf)-1]='\0';
-		
-			buf+=STATUS_HEADER_LENGTH;
-			strcpy(status,buf);
-			info[0]=status;
-		
-			buf=malloc(MAX_IP_LENGTH+IP_HEADER_LENGTH+2);
-			fgets(buf,MAX_IP_LENGTH+IP_HEADER_LENGTH+2,fp);
-			buf[strlen(buf)-1]='\0';
-			buf+=IP_HEADER_LENGTH;
-			strcpy(ip,buf);
-			info[1]=ip;
+		ip=malloc(MAX_IP_LENGTH+IP_HEADER_LENGTH+2);
+		fgets(ip,MAX_IP_LENGTH+IP_HEADER_LENGTH+2,fp);
+		ip[strlen(ip)-1]='\0';
+		ip+=IP_HEADER_LENGTH;
 
-			found=1;
-		
-		
-		}
-		else
-		{
-
-			buf=malloc(SEPARATOR_LENGTH);
-			if(fgets(buf,SEPARATOR_LENGTH,fp)==NULL)
-				return 1;
-
-		
-		}
+		putIntoHashmap(hashmap, user, status, ip);
 	}
+	while(fgets(separator,SEPARATOR_LENGTH,fp)!=NULL);
+	return hashmap;
 }

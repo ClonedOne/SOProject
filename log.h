@@ -1,4 +1,8 @@
 #ifndef LOG
+#define LOG
+#ifndef CONCURRENT_HASHMAP
+#include "concurrent_hashmap.h"
+#endif
 #define LOG_FILE "UsersInfo.txt"
 #define MAX_USERNAME_LENGTH 128 
 #define MAX_STATUS_LENGTH 9
@@ -8,5 +12,6 @@
 #define IP_HEADER_LENGTH 3
 #define SEPARATOR_LENGTH 2
 void clearLog();
+key* restoreConnectedUsers();
 #endif
 
