@@ -1,6 +1,0 @@
-#ifndef LOG
-#define LOG_FILE "UsersInfo.txt"
-
-void clearLog();
-#endif
-
