@@ -17,26 +17,92 @@ The goal of all of it is just to create a sinchronous communication channel betw
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include "cli1.h"
-#include "log.h"
 
 
 #define DEBUG
 
 
 struct winsize ts;
-char* callingIP; //IP address of the caller
-char callingID[DIM]; //User Name of the caller
-char userName [DIM]; //My User Name
-char userPwd [DIM]; //My Password
-int row_count; //number of rows of the terminal window
-int inchat; //flag that shows that client is currently chatting
-int called; //flag that shows that client is currently being called
-int calling; //flag that shows that client is currently calling someone
-int com_res; //store the result of the command function
+char* callingIP; 		//IP address of the caller
+char callingID[IDLEN]; 		//User Name of the caller
+char userName[DIM]; 		//My User Name
+char userPwd[DIM]; 		//My Password
+char serverCom[SERVCOMLEN]	//Buffer used to communicate with server
+int row_count; 			//number of rows of the terminal window
+int inchat; 			//flag that shows that client is currently chatting
+int called; 			//flag that shows that client is currently being called
+int calling;			//flag that shows that client is currently calling someone
+int com_res; 			//store the result of the command function
 int r;
-pthread_t t1, t2, t3; //thread handles
+pthread_t t1, t2, t3; 		//thread handles
 
 
+
+
+//THE MAIN FUNCTION
+
+int main(int argc, char*argv[]){
+
+	int retT1;
+	int k;
+	
+	incaht = NOTINCHAT;			
+	callingIP = malloc(IPLEN);
+
+//this struct is used to store the dimensions (rows/col) of the terminal window
+	ioctl(0, TIOCGWINSZ, &ts);
+	signal(SIGWINCH, sigwinch_handler);
+	row_count = 0;
+
+//clear screen and ask for command
+	clearS();
+	puts("Welcome! We are now starting the service!");
+	printf("Please select which action to perform:\n Write '0' to Sign Up as a new user\n Write '1' to Log In\n");
+	fgets(serverCom, SERVCOMLEN, stdin);
+	while (serverCom[0] != '1' && serverCom[0] != '0'){
+		puts("Invalid command please repeat your selection");
+		serverCom[0] = '\0';
+		fgets(serverCom, SERVCOMLEN, stdin);
+	}
+	if (serverCom[0] == '0')
+		signUpFunc();
+	logInFunc();
+
+
+	do{
+		userName[0] = '\0';
+		puts("Please insert your User Name");
+		fgets(userName, DIM, stdin);
+	} while (acceptableString(userName) == 0);
+	userName[strlen(userName) -1] = '\0';
+	
+	do{
+		userPwd[0] = '\0';
+		puts("Please insert your Password");
+		fgets(userPwd, DIM, stdin);
+	} while (acceptableString(userPwd) == 0);
+	userPwd[strlen(userPwd) -1] = '\0';
+	
+	retT1 = pthread_create(&t1, NULL, &func_t_1, NULL);
+	if (retT1 != 0)
+		puts("Couldn't create the thread!");
+		
+//This loop ends when the user input the ::q command
+	while(com_res != QUIT);
+	printf("\033[1;31mQuitting....\033[0m\n");
+	sleep(2);
+	clearS();
+	exit(1);
+}
+
+
+//Log in function 
+void logInFunc() {
+}
+
+//Sign up function 
+void signUpFunc() {
+}
 
 
 //this thread is used to connect to other clients
@@ -568,46 +634,4 @@ void* func_t_1 () {
 
 
 
-int main(int argc, char*argv[]){
 
-	int retT1;
-	int k;
-	calling = 0;
-	callingIP = malloc(128);
-
-//this struct is used to store the dimensions (rows/col) of the terminal window
-	ioctl(0, TIOCGWINSZ, &ts);
-	signal(SIGWINCH, sigwinch_handler);
-	row_count = 0;
-
-//clear screen
-	clearS();
-	
-	
-	puts("Welcome! We are now starting the service!");
-
-	do{
-		userName[0] = '\0';
-		puts("Please insert your User Name");
-		fgets(userName, DIM, stdin);
-	} while (acceptableString(userName) == 0);
-	userName[strlen(userName) -1] = '\0';
-	
-	do{
-		userPwd[0] = '\0';
-		puts("Please insert your Password");
-		fgets(userPwd, DIM, stdin);
-	} while (acceptableString(userPwd) == 0);
-	userPwd[strlen(userPwd) -1] = '\0';
-	
-	retT1 = pthread_create(&t1, NULL, &func_t_1, NULL);
-	if (retT1 != 0)
-		puts("Couldn't create the thread!");
-		
-//This loop ends when the user input the ::q command
-	while(com_res != QUIT);
-	printf("\033[1;31mQuitting....\033[0m\n");
-	sleep(2);
-	clearS();
-	exit(1);
-}

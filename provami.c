@@ -13,14 +13,23 @@ printf("%d\n",o);
 string[strlen(string)-1] = '\0';
 printf("%s", string);
 printf("loooolz");
-*/
+*//*
 char* array;
 array = malloc (128);
 fgets (array, 1024, stdin);
 array[strlen(array) - 1] = '\0';
 printf("%s", array);
 printf("loooolz");
-
+*/
+char serverCom[10];
+printf("Please select which action to perform:\n Write '0' to Sign Up as a new user\n Write '1' to Log In\n");
+	fgets(serverCom, 10, stdin);
+	//printf("il carattere alla 0 e': %c", serverCom[0]);
+	while (serverCom[0] != '1' && serverCom[0] != '0'){
+		puts("Invalid command please repeat your selection");
+		serverCom[0] = '\0';
+		fgets(serverCom, 10, stdin);
+	}
 }
 
 int noEscape(char *s)

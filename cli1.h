@@ -8,6 +8,12 @@
 #define QUIT -1
 #define ESC_ERR "\033[1;34mPlease insert only printable characters\033[0m"
 #define ESC_ERR_LEN 40
+#define NOTINCHAT 0
+#define INCHAT 1
+#define IPLEN 32
+#define IDLEN 128
+#define SERVCOMLEN 32
+
 
 //Spawns threead 2 for server/client communications
 void spawnT2 ();
@@ -82,6 +88,11 @@ int acceptableString(char *s);
 //Spawns thread 3 for client/client communications
 void spawnT3 ();
 
+//Log in function
+void logInFunc();
+
+//Sign up function
+void signUpFunc();
 
 
 

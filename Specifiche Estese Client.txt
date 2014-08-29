@@ -32,6 +32,7 @@ Attivià Client
 	1) All'attivazione si apre una connessione permanente con il server su un thread secondario
 	2) Si propongono all'utente 2 opzioni:
 		-Login al server
+			a) Vedere punto 3)
 		-Registrazione al servizio
 			a) In caso di registrazione al servizio si invia al server la richiesta di registrazione al servizio
 			b) Si attende l'ok del server
