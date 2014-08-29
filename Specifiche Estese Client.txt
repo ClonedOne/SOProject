@@ -46,6 +46,7 @@ Attivià Client
 			f) Si richiede all'utente di inserire una Password
 			g) Si invia la Password al server
 			h) Si aspetta la conferma di registrazione del server
+			i) Passare al punto 6)
 	3) Si richiedono User Name e Password all'utente 
 	4) Si inviano i dati utente al server per il controllo di login
 	5) In caso di controllo non superato si ritorna al punto 3)

@@ -12,7 +12,9 @@
 #define INCHAT 1
 #define IPLEN 32
 #define IDLEN 128
-#define SERVCOMLEN 32
+#define SERVCOMLEN 8
+#define USERNAME 64
+#define PASSWORD 64
 #define SEMZERO 0
 #define SEMONE 1
 

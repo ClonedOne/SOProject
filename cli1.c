@@ -29,8 +29,8 @@ The goal of all of it is just to create a sinchronous communication channel betw
 struct winsize ts;
 char* callingIP; 			//IP address of the caller
 char callingID[IDLEN]; 		//User Name of the caller
-char userName[DIM]; 		//My User Name
-char userPwd[DIM]; 			//My Password
+char userName[USERNAME]; 	//My User Name
+char userPwd[PASSWORD]; 	//My Password
 char serverCom[SERVCOMLEN];	//Buffer used to communicate with server
 int row_count; 				//number of rows of the terminal window
 int inchat; 				//flag that shows that client is currently chatting
@@ -46,16 +46,14 @@ pthread_t t1, t2, t3; 		//thread handles
 //This thread connects to the server and dwonload the clients list
 void* func_t_2 (){
 
+	int success;
 	int sock;
 	int dest_file;
 	char* fd_name;
 	char buff[DIM];
 	struct sockaddr_in client;
+	success = 0;
 	
-	fd_name = "listinaD.txt";
-	
-	
-
 //Creates the new socket to communicate with server
 	if ((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1){
 		perror("Could not Open socket");
@@ -92,13 +90,80 @@ while(1){
 	char letter = serverCom[0];
 	switch(letter){
 		case '0':
-			write(sock, serverCom, SERVCOMLEN);
-			
+			while(sucess == 0){
+				write(sock, serverCom, SERVCOMLEN);
+				serverCom[0] = '\0';
+				read(sock, serverCom. SERVCOMLEN);
+				if (serverCom[0] == '0')
+					puts("Server Operation FAILED");
+				//Send User Name to Server			
+				do {
+					do{
+						userName[0] = '\0';
+						puts("Please insert your User Name");
+						fgets(userName, USERNAME, stdin);
+					} while (acceptableString(userName) == 0);
+					userName[strlen(userName) -1] = '\0';
+					write(sock, userName, USERNAME);
+					serverCom[0] = '\0';
+					read(sock, serverCom. SERVCOMLEN);
+					if (serverCom[0] == '0')
+						puts("User Name not available please insert another");
+				}while(serverCom[0] != '1');
+				//Send Password to Server
+				do{
+					userPwd[0] = '\0';
+					puts("Please insert your Password");
+					fgets(userPwd, PASSWORD, stdin);
+				} while (acceptableString(userPwd) == 0);
+				userPwd[strlen(userPwd) -1] = '\0';
+				write(sock, userPwd, PASSWORD);
+				serverCom[0] = '\0';
+				read(sock, serverCom. SERVCOMLEN);
+				if (serverCom[0] == '0')
+					puts("Unfortunately there was a problem with the procedure");
+				else 
+					success = 1;
+			}
 		break;
-		
-		
+				
 		case '1':
-		
+			while(sucess == 0){
+				write(sock, serverCom, SERVCOMLEN);
+				serverCom[0] = '\0';
+				read(sock, serverCom. SERVCOMLEN);
+				if (serverCom[0] == '0')
+					puts("Server Operation FAILED");
+				//Send User Name to Server			
+				do {
+					do{
+						userName[0] = '\0';
+						puts("Please insert your User Name");
+						fgets(userName, USERNAME, stdin);
+					} while (acceptableString(userName) == 0);
+					userName[strlen(userName) -1] = '\0';		
+					write(sock, userName, USERNAME);
+					serverCom[0] = '\0';
+					read(sock, serverCom. SERVCOMLEN);
+					if (serverCom[0] == '0')
+						puts("Wrong User Name please insert another");
+				}while(serverCom[0] != '1');
+				//Send Password to Server
+				do{
+					do{
+						userPwd[0] = '\0';
+						puts("Please insert your Password");
+						fgets(userPwd, PASSWORD, stdin);
+					} while (acceptableString(userPwd) == 0);
+					userPwd[strlen(userPwd) -1] = '\0';		
+					write(sock, userPwd, PASSWORD);
+					serverCom[0] = '\0';
+					read(sock, serverCom. SERVCOMLEN);
+					if (serverCom[0] == '0')
+						puts("Wrong Password please insert another");
+				}while(serverCom[0] != '1');
+				success = 1;
+			}
 		break;
 		
 		case '2':
@@ -192,19 +257,9 @@ int main(int argc, char*argv[]){
 	logInFunc();
 
 
-	do{
-		userName[0] = '\0';
-		puts("Please insert your User Name");
-		fgets(userName, DIM, stdin);
-	} while (acceptableString(userName) == 0);
-	userName[strlen(userName) -1] = '\0';
 	
-	do{
-		userPwd[0] = '\0';
-		puts("Please insert your Password");
-		fgets(userPwd, DIM, stdin);
-	} while (acceptableString(userPwd) == 0);
-	userPwd[strlen(userPwd) -1] = '\0';
+	
+	
 	
 	
 		
