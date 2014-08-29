@@ -16,6 +16,10 @@ The goal of all of it is just to create a sinchronous communication channel betw
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <semaphore.h>
 #include "cli1.h"
 
 
@@ -23,19 +27,132 @@ The goal of all of it is just to create a sinchronous communication channel betw
 
 
 struct winsize ts;
-char* callingIP; 		//IP address of the caller
+char* callingIP; 			//IP address of the caller
 char callingID[IDLEN]; 		//User Name of the caller
 char userName[DIM]; 		//My User Name
-char userPwd[DIM]; 		//My Password
-char serverCom[SERVCOMLEN]	//Buffer used to communicate with server
-int row_count; 			//number of rows of the terminal window
-int inchat; 			//flag that shows that client is currently chatting
-int called; 			//flag that shows that client is currently being called
-int calling;			//flag that shows that client is currently calling someone
-int com_res; 			//store the result of the command function
+char userPwd[DIM]; 			//My Password
+char serverCom[SERVCOMLEN];	//Buffer used to communicate with server
+int row_count; 				//number of rows of the terminal window
+int inchat; 				//flag that shows that client is currently chatting
+int called; 				//flag that shows that client is currently being called
+int calling;				//flag that shows that client is currently calling someone
+int com_res; 				//store the result of the command function
 int r;
+sem_t semaphore;			//semaphore used to communicate between threads
 pthread_t t1, t2, t3; 		//thread handles
 
+
+
+//This thread connects to the server and dwonload the clients list
+void* func_t_2 (){
+
+	int sock;
+	int dest_file;
+	char* fd_name;
+	char buff[DIM];
+	struct sockaddr_in client;
+	
+	fd_name = "listinaD.txt";
+	
+	
+
+//Creates the new socket to communicate with server
+	if ((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1){
+		perror("Could not Open socket");
+		exit(EXIT_FAILURE);
+	}
+#ifdef DEBUG
+	puts("We are starting the Server communication thread\n");
+#endif
+
+//fills out the sockaddr struct
+	client.sin_family = AF_INET;
+	client.sin_port = htons(5000);
+	if (inet_aton("127.0.0.1", &client.sin_addr) == 0) {
+		perror("Address to network conversion error");
+	}
+	
+//Creates the destination file
+	if ((dest_file = open(fd_name, O_WRONLY|O_CREAT|O_TRUNC,0660)) == -1){
+		perror("error creating destination file");
+	}
+	
+//Connects to the server
+	if ((connect(sock, (struct sockaddr*) &client, sizeof(client))) == -1){
+	perror("couldn't connect");
+	}
+	
+#ifdef DEBUG
+	puts("Thread connected\n");
+#endif
+
+//Wait for the semaphore
+while(1){
+	sem_wait(&sem_name); 
+	char letter = serverCom[0];
+	switch(letter){
+		case '0':
+			write(sock, serverCom, SERVCOMLEN);
+			
+		break;
+		
+		
+		case '1':
+		
+		break;
+		
+		case '2':
+		
+		break;
+		
+		case '3':
+		
+		break;
+		
+		case '4':		
+		
+		break;
+			
+		case '5':
+		
+		break;
+	
+		default:
+			return;
+		
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+	int size;
+	do {
+		if((size = read(sock, buff, DIM)) == -1){
+			perror("read error");
+		}
+		if (size > 0)
+			printf("%s\n",buff);
+		if((write(dest_file, buff, size)) == -1){
+			perror("write error");
+		}
+	}while(size > 0);
+	
+	close(dest_file);
+}
+}
 
 
 
@@ -43,16 +160,22 @@ pthread_t t1, t2, t3; 		//thread handles
 
 int main(int argc, char*argv[]){
 
-	int retT1;
-	int k;
+	int retT2;		//server talking thread return value
 	
-	incaht = NOTINCHAT;			
+	inchat = NOTINCHAT;			
 	callingIP = malloc(IPLEN);
 
 //this struct is used to store the dimensions (rows/col) of the terminal window
 	ioctl(0, TIOCGWINSZ, &ts);
 	signal(SIGWINCH, sigwinch_handler);
 	row_count = 0;
+
+//Spawn server talking thread adn create communication semaphore
+	if (sem_init(&sempahore, 0, SEMZERO) == -1)
+		perror("Couldn't create the semaphore");
+	retT2 = pthread_create(&t2, NULL, &func_t_2, NULL);
+	if (retT2 != 0)
+		perror("Couldn't create the thread!");
 
 //clear screen and ask for command
 	clearS();
@@ -83,9 +206,7 @@ int main(int argc, char*argv[]){
 	} while (acceptableString(userPwd) == 0);
 	userPwd[strlen(userPwd) -1] = '\0';
 	
-	retT1 = pthread_create(&t1, NULL, &func_t_1, NULL);
-	if (retT1 != 0)
-		puts("Couldn't create the thread!");
+	
 		
 //This loop ends when the user input the ::q command
 	while(com_res != QUIT);
@@ -130,7 +251,7 @@ void* func_t_3() {
 	
 	printf("chosen ip is %s\n",callingIP);
 	
-//creates the scket
+//creates the socket
 	if ((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1){
 		perror("Could not Open socket");
 		exit(EXIT_FAILURE);
@@ -220,68 +341,6 @@ void spawnT3 () {
 //Clear Screen
 void clearS (){
 	printf("\033[2J\033[H\033[A");
-}
-
-
-//Client thread
-//This thread connects to the server and dwonload the clients list
-void* func_t_2 (){
-
-	int sock;
-	int dest_file;
-	char* fd_name;
-	char buff[DIM];
-	struct sockaddr_in client;
-	
-	fd_name = "listinaD.txt";
-	
-	
-
-//Creates the new socket to communicate with server
-	if ((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1){
-		perror("Could not Open socket");
-		exit(EXIT_FAILURE);
-	}
-#ifdef DEBUG
-	puts("We are fetching the clients list\n");
-#endif
-
-//fills out the sockaddr struct
-	client.sin_family = AF_INET;
-	client.sin_port = htons(5000);
-	if (inet_aton("127.0.0.1", &client.sin_addr) == 0) {
-		perror("Address to network conversion error");
-	}
-	
-//Creates the destination file
-	if ((dest_file = open(fd_name, O_WRONLY|O_CREAT|O_TRUNC,0660)) == -1){
-		perror("error creating destination file");
-	}
-	
-//Connects to the server
-	if ((connect(sock, (struct sockaddr*) &client, sizeof(client))) == -1){
-	perror("couldn't connect");
-	}
-	
-	clearS ();
-	
-#ifdef DEBUG	
-	puts("We are fetching the clients list\n");
-#endif
-
-	int size;
-	do {
-		if((size = read(sock, buff, DIM)) == -1){
-			perror("read error");
-		}
-		if (size > 0)
-			printf("%s\n",buff);
-		if((write(dest_file, buff, size)) == -1){
-			perror("write error");
-		}
-	}while(size > 0);
-	
-	close(dest_file);
 }
 
 
@@ -392,7 +451,6 @@ int command(char* buf) {
 			return 0;
 		break;
 		
-		
 		case 'A':
 		case 'a':
 			return ACCEPT;
@@ -408,6 +466,7 @@ int command(char* buf) {
 				spawnT3();
 				return 0;
 			}
+		break;
 		
 		case 'D':
 		case 'd':

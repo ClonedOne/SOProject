@@ -13,7 +13,8 @@
 #define IPLEN 32
 #define IDLEN 128
 #define SERVCOMLEN 32
-
+#define SEMZERO 0
+#define SEMONE 1
 
 //Spawns threead 2 for server/client communications
 void spawnT2 ();
