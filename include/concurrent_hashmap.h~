@@ -21,7 +21,6 @@ typedef struct
 	value* value;
 } key;
 
-key* hashmap;
 key* createHashmap();
 long hash(unsigned char *str);
 void hashmap_mem_refresh(key* first_key);

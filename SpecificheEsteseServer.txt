@@ -66,7 +66,7 @@ Attività del Server
 				VI) Si salva lo user name in una variabile locale
 				VII) Si agigunge l'utente alla lista dei client attivi
 				VIII) Si setta lo stato del client a Disponibile
-				IX) Si slava nel file di log le informazioni sul client
+				IX) Si salva nel file di log le informazioni sul client
 		b) Si attende un messaggio dal client
 			- '2' 
 				I) Si elimina il client dalla lista dei client attivi

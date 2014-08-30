@@ -10,7 +10,7 @@ value* values;
 key sentinel_key;
 char* sentinel;
 int hashmap_size,entry_count,ds_sem;
-
+struct sembuf oper;
 
 
 key* createHashmap()

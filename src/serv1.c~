@@ -76,7 +76,7 @@ int clientConnection(int* cli_sock)
 		puts(firstCommand);
 		#endif
 
-	} while (firstComm = getFirstCommand(firstCommand)==-1);
+	} while (firstComm = getCommand(firstCommand)==-1);
 
 
 	
