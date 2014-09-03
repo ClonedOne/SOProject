@@ -6,6 +6,7 @@ The goal of all of it is just to create a sinchronous communication channel betw
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -31,14 +32,15 @@ char* callingIP; 			//IP address of the caller
 char callingID[IDLEN]; 		//User Name of the caller
 char userName[USERNAME]; 	//My User Name
 char userPwd[PASSWORD]; 	//My Password
-char serverCom[SERVCOMLEN];	//Buffer used to communicate with server
+char serverCom[SERV_COM];	//Buffer used to communicate with server
 int row_count; 				//number of rows of the terminal window
 int inchat; 				//flag that shows that client is currently chatting
 int called; 				//flag that shows that client is currently being called
 int calling;				//flag that shows that client is currently calling someone
 int com_res; 				//store the result of the command function
 int r;
-sem_t semaphore;			//semaphore used to communicate between threads
+sem_t sem1;					//semaphore used by threadMain to start threadServer
+sem_t sem2;					//sempahore used by threadServer to give control back to threadMain
 pthread_t t1, t2, t3; 		//thread handles
 
 
@@ -52,7 +54,7 @@ void* func_t_2 (){
 	char* fd_name;
 	char buff[DIM];
 	struct sockaddr_in client;
-	success = 0;
+	
 	
 //Creates the new socket to communicate with server
 	if ((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1){
@@ -85,138 +87,149 @@ void* func_t_2 (){
 #endif
 
 //Wait for the semaphore
-while(1){
-	sem_wait(&sem_name); 
-	char letter = serverCom[0];
-	switch(letter){
-		case '0':
-			while(sucess == 0){
-				write(sock, serverCom, SERVCOMLEN);
-				serverCom[0] = '\0';
-				read(sock, serverCom. SERVCOMLEN);
-				if (serverCom[0] == '0')
-					puts("Server Operation FAILED");
-				//Send User Name to Server			
-				do {
-					do{
-						userName[0] = '\0';
-						puts("Please insert your User Name");
-						fgets(userName, USERNAME, stdin);
-					} while (acceptableString(userName) == 0);
-					userName[strlen(userName) -1] = '\0';
-					write(sock, userName, USERNAME);
+	while(1){
+		success = 0;
+		sem_wait(&sem1); 
+		char letter = serverCom[0];
+		switch(letter){
+			case '0':
+				while(success == 0){
+					write(sock, serverCom, SERV_COM);
 					serverCom[0] = '\0';
-					read(sock, serverCom. SERVCOMLEN);
+					read(sock, serverCom, SERV_COM);
 					if (serverCom[0] == '0')
-						puts("User Name not available please insert another");
-				}while(serverCom[0] != '1');
-				//Send Password to Server
-				do{
-					userPwd[0] = '\0';
-					puts("Please insert your Password");
-					fgets(userPwd, PASSWORD, stdin);
-				} while (acceptableString(userPwd) == 0);
-				userPwd[strlen(userPwd) -1] = '\0';
-				write(sock, userPwd, PASSWORD);
-				serverCom[0] = '\0';
-				read(sock, serverCom. SERVCOMLEN);
-				if (serverCom[0] == '0')
-					puts("Unfortunately there was a problem with the procedure");
-				else 
-					success = 1;
-			}
-		break;
-				
-		case '1':
-			while(sucess == 0){
-				write(sock, serverCom, SERVCOMLEN);
-				serverCom[0] = '\0';
-				read(sock, serverCom. SERVCOMLEN);
-				if (serverCom[0] == '0')
-					puts("Server Operation FAILED");
-				//Send User Name to Server			
-				do {
-					do{
-						userName[0] = '\0';
-						puts("Please insert your User Name");
-						fgets(userName, USERNAME, stdin);
-					} while (acceptableString(userName) == 0);
-					userName[strlen(userName) -1] = '\0';		
-					write(sock, userName, USERNAME);
-					serverCom[0] = '\0';
-					read(sock, serverCom. SERVCOMLEN);
-					if (serverCom[0] == '0')
-						puts("Wrong User Name please insert another");
-				}while(serverCom[0] != '1');
-				//Send Password to Server
-				do{
+						puts("Server Operation FAILED");
+					//Send User Name to Server			
+					do {
+						do{
+							userName[0] = '\0';
+							puts("Please insert your User Name");
+							fgets(userName, USERNAME, stdin);
+						} while (acceptableString(userName) == 0);
+						userName[strlen(userName) -1] = '\0';
+						write(sock, userName, USERNAME);
+						serverCom[0] = '\0';
+						read(sock, serverCom, SERV_COM);
+						if (serverCom[0] == '0')
+							puts("User Name not available please insert another");
+					}while(serverCom[0] != '1');
+					//Send Password to Server
 					do{
 						userPwd[0] = '\0';
 						puts("Please insert your Password");
 						fgets(userPwd, PASSWORD, stdin);
 					} while (acceptableString(userPwd) == 0);
-					userPwd[strlen(userPwd) -1] = '\0';		
+					userPwd[strlen(userPwd) -1] = '\0';
 					write(sock, userPwd, PASSWORD);
 					serverCom[0] = '\0';
-					read(sock, serverCom. SERVCOMLEN);
+					read(sock, serverCom, SERV_COM);
 					if (serverCom[0] == '0')
-						puts("Wrong Password please insert another");
-				}while(serverCom[0] != '1');
-				success = 1;
-			}
-		break;
-		
-		case '2':
-		
-		break;
-		
-		case '3':
-		
-		break;
-		
-		case '4':		
-		
-		break;
+						puts("Unfortunately there was a problem with the procedure");
+					else 
+						success = 1;
+				}
+			break;
+					
+			case '1':
+				while(success == 0){
+					write(sock, serverCom, SERV_COM);
+					serverCom[0] = '\0';
+					read(sock, serverCom, SERV_COM);
+					if (serverCom[0] == '0')
+						puts("Server Operation FAILED");
+					//Send User Name to Server			
+					do {
+						do{
+							userName[0] = '\0';
+							puts("Please insert your User Name");
+							fgets(userName, USERNAME, stdin);
+						} while (acceptableString(userName) == 0);
+						userName[strlen(userName) -1] = '\0';		
+						write(sock, userName, USERNAME);
+						serverCom[0] = '\0';
+						read(sock, serverCom, SERV_COM);
+						if (serverCom[0] == '0')
+							puts("Wrong User Name please insert another");
+					}while(serverCom[0] != '1');
+					//Send Password to Server
+					do{
+						do{
+							userPwd[0] = '\0';
+							puts("Please insert your Password");
+							fgets(userPwd, PASSWORD, stdin);
+						} while (acceptableString(userPwd) == 0);
+						userPwd[strlen(userPwd) -1] = '\0';		
+						write(sock, userPwd, PASSWORD);
+						serverCom[0] = '\0';
+						read(sock, serverCom, SERV_COM);
+						if (serverCom[0] == '0')
+							puts("Wrong Password please insert another");
+					}while(serverCom[0] != '1');
+					success = 1;
+				}
+			break;
 			
-		case '5':
+			case '2':
+				while (success == 0) {
+					serverCom[0] = '2';
+					write(sock, serverCom, SERV_COM);
+					serverCom[0] = '\0';
+					read(sock, serverCom, SERV_COM);
+					if (serverCom[0] == '1')
+						success = 1;
+				}
+			break;
+			
+			case '3':
+				while (success == 0) {
+					serverCom[0] = '3';
+					write(sock, serverCom, SERV_COM);
+					serverCom[0] = '\0';
+					read(sock, serverCom, SERV_COM);
+					if (serverCom[0] == '1')
+						success = 1;
+				}
+			
+			break;
+			
+			case '4':		
+				while (success == 0) {
+					serverCom[0] = '4';
+					write(sock, serverCom, SERV_COM);
+					serverCom[0] = '\0';
+					read(sock, serverCom, SERV_COM);
+					if (serverCom[0] == '1')
+						success = 1;
+				}
+			break;
+				
+			case '5':
+				do{
+					serverCom[0] = '5';
+					write(sock, serverCom, SERV_COM);
+					serverCom[0] = '\0';
+					read(sock, serverCom, SERV_COM);
+				}while(serverCom[0] != '1');
+				int size;
+				do {
+					if((size = read(sock, buff, DIM)) == -1)
+						perror("read error");
+					if (size > 0)
+						printf("%s\n",buff);
+				}while(size > 0);
+				success = 1;
+			break;
 		
-		break;
-	
-		default:
-			return;
+			default:
+				perror("Communication management problem");
+		}
+		
+		serverCom[0] = '\0';
+		if (success == 1);
+			sem_post(&sem2);
 		
 	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-
-	int size;
-	do {
-		if((size = read(sock, buff, DIM)) == -1){
-			perror("read error");
-		}
-		if (size > 0)
-			printf("%s\n",buff);
-		if((write(dest_file, buff, size)) == -1){
-			perror("write error");
-		}
-	}while(size > 0);
-	
-	close(dest_file);
-}
+	close(sock);
 }
 
 
@@ -235,9 +248,9 @@ int main(int argc, char*argv[]){
 	signal(SIGWINCH, sigwinch_handler);
 	row_count = 0;
 
-//Spawn server talking thread adn create communication semaphore
-	if (sem_init(&sempahore, 0, SEMZERO) == -1)
-		perror("Couldn't create the semaphore");
+//Spawn server talking thread and  create communication semaphores
+	if (sem_init(&sem1, 0, SEMZERO) == -1 || sem_init(&sem2, 0, SEMONE) == -1)
+		perror("Couldn't create the semaphores");
 	retT2 = pthread_create(&t2, NULL, &func_t_2, NULL);
 	if (retT2 != 0)
 		perror("Couldn't create the thread!");
@@ -246,16 +259,14 @@ int main(int argc, char*argv[]){
 	clearS();
 	puts("Welcome! We are now starting the service!");
 	printf("Please select which action to perform:\n Write '0' to Sign Up as a new user\n Write '1' to Log In\n");
-	fgets(serverCom, SERVCOMLEN, stdin);
+	fgets(serverCom, SERV_COM, stdin);
 	while (serverCom[0] != '1' && serverCom[0] != '0'){
 		puts("Invalid command please repeat your selection");
 		serverCom[0] = '\0';
-		fgets(serverCom, SERVCOMLEN, stdin);
+		fgets(serverCom, SERV_COM, stdin);
 	}
-	if (serverCom[0] == '0')
-		signUpFunc();
-	logInFunc();
-
+	sem_post(&sem1);
+	sem_wait(&sem2);
 
 	
 	
@@ -269,15 +280,6 @@ int main(int argc, char*argv[]){
 	sleep(2);
 	clearS();
 	exit(1);
-}
-
-
-//Log in function 
-void logInFunc() {
-}
-
-//Sign up function 
-void signUpFunc() {
 }
 
 
@@ -348,13 +350,7 @@ void* func_t_3() {
 //Chat loop
 	chat(&sock, sendBuf, recvBuf);
 
-
-
-
 }
-
-
-
 
 
 
@@ -368,18 +364,6 @@ int acceptableString(char *s){
 			
 	}
 	return 1;
-}
-
-
-
-
-//Spawns threead 2 for server/client communications
-void spawnT2 () {
-	int retT2;
-	retT2 = pthread_create(&t2, NULL, &func_t_2, NULL);
-	if (retT2 != 0)
-		perror("Couldn't create the thread!");
-
 }
 
 
@@ -418,7 +402,6 @@ int incr (int slen, int nlen){
 //prints the received string and increments the current writing line
 //restore previous cursor position
 void printRecvUp(char* recvBuf, int length) {
-	int k;
 	int written_rows;
 	written_rows = incr(length, strlen(callingID));
 	printf("\033[s");
@@ -431,7 +414,6 @@ void printRecvUp(char* recvBuf, int length) {
 }
 
 void printSendUp(char* sendBuf, int length){
-	int k;	
 	int written_rows;
 	int i;
 	written_rows = incr(length, strlen("You"));
@@ -498,7 +480,7 @@ int command(char* buf) {
 			printf("\033[A\033[2K");
 			puts("Welcome to the HELP, here is the list of possbile commands.");
 			puts("::a --> Accept incoming call");
-			puts("::c --> Call someone"); //TO BE DONE
+			puts("::c --> Call someone");
 			puts("::d --> Disconnect from current call");
 			puts("::l --> Get the list of available clients form server");
 			puts("::q --> Quit the program");

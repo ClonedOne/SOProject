@@ -2,24 +2,21 @@
 #define CLI1
 
 
-#define DIM 1024
-#define ACCEPT 1
-#define DISCONNECT -2
-#define QUIT -1
+#define DIM (1024)
+#define ACCEPT (1)
+#define DISCONNECT (-2)
+#define QUIT (-1)
 #define ESC_ERR "\033[1;34mPlease insert only printable characters\033[0m"
-#define ESC_ERR_LEN 40
-#define NOTINCHAT 0
-#define INCHAT 1
-#define IPLEN 32
-#define IDLEN 128
-#define SERVCOMLEN 8
-#define USERNAME 64
-#define PASSWORD 64
-#define SEMZERO 0
-#define SEMONE 1
-
-//Spawns threead 2 for server/client communications
-void spawnT2 ();
+#define ESC_ERR_LEN (40)
+#define NOTINCHAT (0)
+#define INCHAT (1)
+#define IPLEN (32)
+#define IDLEN (128)
+#define USERNAME (64)
+#define PASSWORD (64)
+#define SEMZERO (0)
+#define SEMONE (1)
+#define SERV_COM (8)
 
 
 //Clear Screen

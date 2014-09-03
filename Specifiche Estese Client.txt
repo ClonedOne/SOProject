@@ -60,8 +60,9 @@ Attivià Client
 	10) Si notifica al server lo stato di disponibile
 	11) L'utente può richiedere la lista dei client dispoibili al server in ogni momento in cui non è in chat
 		a) Si richiede al server l'invio della lista degli utente
-		b) Si instaura il protocollo di trasferimento della lista
-		c) Ogni entry della lista viene stampata a schermo affinchè l'utente possa leggerla
+		b) Si attende l'OK del server
+		c) Si instaura il protocollo di trasferimento della lista
+		d) Ogni entry della lista viene stampata a schermo affinchè l'utente possa leggerla
 	12) In qualunque momento non sia in chat l'utente può provare a contattare un altro Client
 		a) Si notifica al Server lo stato Occupato
 		c) Si apre la connessione con l'IP del client selezionato
