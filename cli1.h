@@ -3,7 +3,10 @@
 
 
 #define DIM (1024)
+#define CONNECT (3)
+#define LIST (2)
 #define ACCEPT (1)
+#define LISTEN (0)
 #define DISCONNECT (-2)
 #define QUIT (-1)
 #define ESC_ERR "\033[1;34mPlease insert only printable characters\033[0m"
@@ -77,16 +80,17 @@ void chat(int* sock, char sendBuf[], char recvBuf[]);
 
 
 
-//This thread manages incoming connections
-void* func_t_1 ();
+//This function manages incoming connections
+void func_1 ();
+
+
+//This function manages outgoing calls
+void func_3 ();
 
 
 //check if the string contains unacceptable characters
 int acceptableString(char *s);
 
-
-//Spawns thread 3 for client/client communications
-void spawnT3 ();
 
 //Log in function
 void logInFunc();

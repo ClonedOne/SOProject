@@ -35,8 +35,6 @@ char userPwd[PASSWORD]; 	//My Password
 char serverCom[SERV_COM];	//Buffer used to communicate with server
 int row_count; 				//number of rows of the terminal window
 int inchat; 				//flag that shows that client is currently chatting
-int called; 				//flag that shows that client is currently being called
-int calling;				//flag that shows that client is currently calling someone
 int com_res; 				//store the result of the command function
 int r;
 sem_t sem1;					//semaphore used by threadMain to start threadServer
@@ -50,8 +48,6 @@ void* func_t_2 (){
 
 	int success;
 	int sock;
-	int dest_file;
-	char* fd_name;
 	char buff[DIM];
 	struct sockaddr_in client;
 	
@@ -70,11 +66,6 @@ void* func_t_2 (){
 	client.sin_port = htons(5000);
 	if (inet_aton("127.0.0.1", &client.sin_addr) == 0) {
 		perror("Address to network conversion error");
-	}
-	
-//Creates the destination file
-	if ((dest_file = open(fd_name, O_WRONLY|O_CREAT|O_TRUNC,0660)) == -1){
-		perror("error creating destination file");
 	}
 	
 //Connects to the server
@@ -240,6 +231,9 @@ int main(int argc, char*argv[]){
 
 	int retT2;		//server talking thread return value
 	
+	
+//Variables initialization phase
+	com_res = LISTEN;
 	inchat = NOTINCHAT;			
 	callingIP = malloc(IPLEN);
 
@@ -268,14 +262,23 @@ int main(int argc, char*argv[]){
 	sem_post(&sem1);
 	sem_wait(&sem2);
 
-	
-	
-	
-	
-	
+	//This loop ends when the user input the ::q command
+	while(com_res != QUIT){
 		
-//This loop ends when the user input the ::q command
-	while(com_res != QUIT);
+		if(com_res == LISTEN)
+			func_1();
+		else if (com_res == CONNECT)
+			func_3();
+		else {
+			serverCom[0] = '5';
+			sem_post(&sem1);
+			sem_wait(&sem2);
+		}
+			
+		com_res = LISTEN;
+		
+		
+	}
 	printf("\033[1;31mQuitting....\033[0m\n");
 	sleep(2);
 	clearS();
@@ -284,13 +287,10 @@ int main(int argc, char*argv[]){
 
 
 //this thread is used to connect to other clients
-void* func_t_3() {
+void func_3() {
 	
 	
-	calling = 1;
 	int sock;
-	int length;
-	int res;
 	struct sockaddr_in client;
 	char sendBuf[DIM];
 	char recvBuf[DIM];
@@ -343,7 +343,7 @@ void* func_t_3() {
 	noBlockSocket(sock);
 	noBlockInput();
 
-	inchat = 1;
+	inchat = INCHAT;
 	stampaHeader();
 	
 			
@@ -364,16 +364,6 @@ int acceptableString(char *s){
 			
 	}
 	return 1;
-}
-
-
-//Spawns thread 3 for client/client communications
-void spawnT3 () {
-	int retT3;
-	retT3 = pthread_create(&t3, NULL, &func_t_3, NULL);
-	if (retT3 != 0)
-		perror("Couldn't create the thread!");
-
 }
 
 
@@ -485,7 +475,7 @@ int command(char* buf) {
 			puts("::l --> Get the list of available clients form server");
 			puts("::q --> Quit the program");
 			puts("::h --> Show the HELP");	
-			return 0;
+			return LISTEN;
 		break;
 		
 		case 'A':
@@ -495,20 +485,19 @@ int command(char* buf) {
 		
 		case 'C':
 		case 'c':
-			if (called == 1 || calling == 1){
+			if (inchat == INCHAT){
 				printf("Please disconnect from current call before attempting a new call");
-				return 0;
+				return LISTEN;
 			}
 			else{
-				spawnT3();
-				return 0;
+				return CONNECT;
 			}
 		break;
 		
 		case 'D':
 		case 'd':
-			if (called == 0)
-				return 0;
+			if (inchat == NOTINCHAT)
+				return LISTEN;
 			puts("Disconnecting...");
 			sleep(1);
 			printf("\033[2J");
@@ -519,8 +508,11 @@ int command(char* buf) {
 		
 		case 'L':		
 		case 'l':
-			spawnT2();
-			return 0;
+			if (inchat == INCHAT){
+				printf("Please disconnect from current call before attempting a connection to the server");
+				return LISTEN;
+			}
+			return LIST;
 		break;
 			
 		case 'Q':
@@ -530,7 +522,7 @@ int command(char* buf) {
 	
 		default:
 			puts("Couldn't recognise the command, please try '::h' for help");
-			return 0;
+			return LISTEN;
 		
 	}
 }
@@ -573,7 +565,7 @@ void chat(int* sock, char sendBuf[], char recvBuf[]) {
 	int rN;
 	int sock_a = *sock;
 
-	while(!(com_res < 0)){				
+	while(!(com_res < LISTEN)){				
 		rN = read(sock_a, recvBuf, DIM);
 		if(rN > 0){
 			printRecvUp(recvBuf, strlen(recvBuf));
@@ -602,7 +594,7 @@ void chat(int* sock, char sendBuf[], char recvBuf[]) {
 
 
 //This thread manages incoming connections
-void* func_t_1 () {
+void func_1 () {
 
 	int servsock;
 	int sock_a;
@@ -615,10 +607,6 @@ void* func_t_1 () {
 	char sendBuf[DIM];
 	char recvBuf[DIM];
 
-	
-#ifdef DEBUG	
-	puts("We are starting the receiving thread");
-#endif	
 	
 //open the server socket to accept connections
 	if ((servsock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1){
@@ -654,19 +642,19 @@ void* func_t_1 () {
 	puts("The process is now listening");
 #endif
 
-	while(com_res != QUIT){
+	while(com_res != QUIT && com_res != LIST && com_res != CONNECT){
 	
 //waits for connections, changing both servsock and stdin to NONBLOCK
 		length = sizeof(client);
 		puts("Type '::h' for HELP\n\033[1;34mWaiting for incoming calls.....\033[0m");
 		noBlockInput();
 		noBlockSocket(servsock);
-		while ((sock_a = accept(servsock, (struct sockaddr *)&client, &length)) == -1 && com_res != QUIT){
+		while ((sock_a = accept(servsock, (struct sockaddr *)&client, &length)) == -1 && com_res != QUIT && com_res != LIST && com_res != CONNECT){
 			if((fgets(sendBuf, DIM, stdin)) != NULL)
 				checkForCommand(sendBuf);
 		}
 
-//Checks if the user selected the "quit" option
+//Checks if the user selected the "quit" option |||CHECKIT||
 		if(com_res == QUIT)
 			break;
 
@@ -688,10 +676,10 @@ void* func_t_1 () {
 		
 
 //Asks the user if she/he wants to accept the incoming call
-		com_res = 0;	
-		called = 1;
+		com_res = LISTEN;	
+		inchat = INCHAT;
 		printf("Do you want to accept the incoming call?\n");
-		while (com_res == 0) {
+		while (com_res == LISTEN) {
 			if((fgets(sendBuf, DIM, stdin)) != NULL)
 				checkForCommand(sendBuf);
 			sendBuf[0] = '\0';
@@ -707,7 +695,7 @@ void* func_t_1 () {
 			noBlockSocket(sock_a);
 			noBlockInput();
 	
-			inchat = 1;
+
 			stampaHeader();
 	
 			
@@ -720,9 +708,8 @@ void* func_t_1 () {
 			sendBuf[0] = '\0';
 			close(sock_a);
 			puts("Call refused");
-			com_res = 0;
-			inchat = 0;
-			called = 0;
+			com_res = LISTEN;
+			inchat = NOTINCHAT;
 		}
 	}
 	close(servsock);
