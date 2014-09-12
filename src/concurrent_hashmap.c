@@ -9,7 +9,7 @@ key* keypointer;
 value* values;
 key sentinel_key;
 char* sentinel;
-int hashmap_size,entry_count,ds_sem;
+int entry_count,ds_sem;
 
 
 
@@ -281,6 +281,33 @@ void hashmap_show(key* first_key)
 		//printf("p: %d\n",p);
 		keypointer++;
 	}
+}
+
+value** hashmap_retrieveAvailableUsers(key* first_key)
+{
+	keypointer=first_key;
+	
+	
+	value** result=malloc(hashmap_size*(sizeof(value*)));
+	
+	//snprintf("%d\n",p);
+	while(keypointer<first_key+hashmap_size)
+	{
+		if(keypointer->keyname!=NULL && keypointer->keyname!=sentinel)
+		{
+			if(keypointer->keyname!=NULL && keypointer->keyname!=sentinel)
+			{
+				if(strcmp(keypointer->value->status,"available")==0)
+				{
+					*result=malloc(sizeof(value));
+					*result=keypointer->value;	
+					result++;				
+				}
+			}
+		}
+		keypointer++;
+	}
+	return result;
 }
 
 /*int main()

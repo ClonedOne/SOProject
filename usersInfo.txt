@@ -1,7 +1,0 @@
-user:uncleman11
-status:busy
-ip:10.0.0.5
-
-user:tumma
-status:available
-ip:10.0.0.1

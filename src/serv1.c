@@ -15,14 +15,16 @@
 #include "login_parser.h"
 #include "concurrent_hashmap.h"
 #include "log.h"
+#include "commandManager.h"
+#include "auth_service.h"
 
 
 #define CODA 5
 #define DIM 1024
 #define MAX_PENDING_CONNECTIONS 100
-#define ANSWER_LENGTH 2
-#define CLIENT_COMMAND_LENGTH 2
-#define LOG_FILE "UsersInfo.txt"
+
+
+
 
 
 
@@ -31,13 +33,11 @@ int clientConnection(int* cli_sock)
 
 	int r_size;
 	int control;
-	char* user;
-	char* password;
 	char* firstCommand;
-	int firstComm;
+	int firstComm,secondComm;
 
-	user = malloc(MAX_USERNAME_LENGTH);
-	password = malloc(MAX_PASSWORD_LENGTH);
+	char* user = malloc(MAX_USERNAME_LENGTH);
+	char* password = malloc(MAX_PASSWORD_LENGTH);
 
 	firstCommand=malloc(ANSWER_LENGTH);	
 
@@ -68,76 +68,110 @@ int clientConnection(int* cli_sock)
 	//Si mette in attesa del comando da parte del client
 
 	do{
-		puts("Waiting for client command");
-		fgets(firstCommand, CLIENT_COMMAND_LENGTH, stdin);
+		puts("Waiting for client first command");
+		read(cli_sock, firstCommand, CLIENT_COMMAND_LENGTH);
 		
 		#ifdef DEBUG
 		puts("Comando preso in input:");
 		puts(firstCommand);
 		#endif
 
-	} while (firstComm = getFirstCommand(firstCommand)==-1);
+	} while (getClientFirstCommand(firstCommand)==-1);
 
 
 	
-	if(firstComm==1)
+	if(firstComm=='0')
 	{
-		//Client Login
-	}
-	else
-	{
-		//Client registration
-	}
-	
-
-	pthread_exit(0);
-	
-}
-
-int getFirstCommand(char* command)
-{
-	if(strlen(command)==CLIENT_COMMAND_LENGTH) 
-	{
-		if(command[0]=='1')
-			return 1;
-		else if(command[0]=='0') 
-			return 0;
-	}
-	return -1;
-}
-int getAnswer(char* answer)
-{
-	if(strlen(answer)==ANSWER_LENGTH) 
-	{
-		if(answer[0]=='Y')
-			return 1;
-		else if(answer[0]=='N') 
-			return 0;
-	}
-	return -1;
-}
-
-
-
-
-
-int checkUserLogin(char* user, char* password)
-{
-	int found;
-	char** info = malloc(sizeof(char*)*2);
-	found = getInfoByUser(user,info);
-
-	if(found!=0)	
-	{	
-		if(strcmp(password,info[0])==0)
-			return 1;
+		//Client Registration
+		if(registrationRequest(cli_sock)==-1)
+			puts("Registrazione al servizio fallita");
 		else
-			return 0;		
+			puts("Registrazione al servizio avvenuta con successo");
+
+		
+	}
+	else if(firstComm=='1')
+	{
+		//Client login
+
+		if(loginRequest(cli_sock)==-1)
+			puts("Login al servizio fallita");
+		else
+			puts("Login al servizio avvenuta con successo");
 	}
 
-	return 0;
+	
+	do{
+		puts("Waiting for client second command");
+		read(cli_sock, secondComm, CLIENT_COMMAND_LENGTH);
+		
+		#ifdef DEBUG
+		puts("Comando preso in input:");
+		puts(secondComm);
+		#endif
 
+	} while (getClientSecondCommand(secondComm)==-1);
+
+	if(secondComm=='2')
+	{
+		//Client Logout
+		if(logoutRequest(cli_sock)==-1)
+			puts("Logout al servizio fallito");
+		else
+			puts("Logout al servizio avvenuta con successo");
+		
+		//Terminates thread
+
+		pthread_exit(-1);
+
+		
+	}
+	else if(secondComm=='3')
+	{
+		//Client status 'available'
+
+		if(availableRequest(cli_sock)==-1)
+			puts("Aggiornamento di statocdisponibile fallito");
+		else
+			puts("Aggiornamento di stato disponibile avvenuto con successo");
+	}
+	else if(secondComm=='4')
+	{
+		//Client status 'busy'
+
+		if(busyRequest(cli_sock)==-1)
+			puts("Aggiornamento di statocdisponibile fallito");
+		else
+			puts("Aggiornamento di stato occupato avvenuto con successo");
+	}
+	else if(secondComm=='5')
+	{
+		//Retrieve available user list
+
+		if(retrieveListRequest(cli_sock)==-1)
+			puts("Richiesta lista utenti disponibili al servizio fallita");
+		else
+			puts("Richeiesta lista utenti disponibili al servizio avvenuta con successo");
+	}
+	
+	
+	
+
+	pthread_exit(1);
+	
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 void main() {
 

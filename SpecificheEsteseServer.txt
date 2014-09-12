@@ -56,7 +56,7 @@ Attività del Server
 				VII) Si riceve la Password dal client e la si salva nel file
 				VIII) Si invia il messaggio di avvenuta registrazione al client
 				IX) Si setta lo stato del client a Disponibile
-				X) Si slava nel file di log le informazioni sul client
+				X) Si salva nel file di log le informazioni sul client
 			- '1' 
 				I) Si apre il file dei dati utente
 				II) Si invia al client l'OK alla trasmissione dati 
@@ -64,7 +64,7 @@ Attività del Server
 				IV) Si controlla che siano presenti nel file dati utente
 				V) In caso negativo si invia il messaggio di rifiuto e si torna al punto III)
 				VI) Si salva lo user name in una variabile locale
-				VII) Si agigunge l'utente alla lista dei client attivi
+				VII) Si aggiunge l'utente alla lista dei client attivi
 				VIII) Si setta lo stato del client a Disponibile
 				IX) Si salva nel file di log le informazioni sul client
 		b) Si attende un messaggio dal client
@@ -82,7 +82,7 @@ Attività del Server
 				II) Si setta lo stato del client a Occupato
 				III) Si slava nel file di log le informazioni sul client
 			- '5'
-				I) Si crea scorre la lista dei client attivi
+				I) Si scorre la lista dei client attivi
 				II) Per ogni client Disponibile si inviano i dati del client in oggetto al richiedente
 		
 	
