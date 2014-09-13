@@ -15,5 +15,6 @@
 void clearLog();
 key* restoreConnectedUsers();
 int saveInLog(char* user, char* ip, char* status);
+int deleteFromLog(char* userToDelete);
 #endif
 
