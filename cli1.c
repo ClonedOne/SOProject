@@ -64,7 +64,7 @@ void* func_t_2 (){
 //fills out the sockaddr struct
 	client.sin_family = AF_INET;
 	client.sin_port = htons(5000);
-	if (inet_aton("127.0.0.1", &client.sin_addr) == 0) {
+	if (inet_aton("192.168.43.63", &client.sin_addr) == 0) {
 		perror("Address to network conversion error");
 	}
 	
@@ -81,11 +81,13 @@ void* func_t_2 (){
 	while(1){
 		success = 0;
 		sem_wait(&sem1); 
+		puts("sono qui");
 		char letter = serverCom[0];
 		switch(letter){
 			case '0':
 				while(success == 0){
 					write(sock, serverCom, SERV_COM);
+					puts("ho scritto!!!");
 					serverCom[0] = '\0';
 					read(sock, serverCom, SERV_COM);
 					if (serverCom[0] == '0')
@@ -259,6 +261,9 @@ int main(int argc, char*argv[]){
 		serverCom[0] = '\0';
 		fgets(serverCom, SERV_COM, stdin);
 	}
+#ifdef DEBUG
+	printf("comando = %c",serverCom[0]);
+#endif
 	sem_post(&sem1);
 	sem_wait(&sem2);
 

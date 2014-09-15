@@ -4,10 +4,8 @@ int getClientFirstCommand(char* command)
 {
 	if(strlen(command)==CLIENT_COMMAND_LENGTH) 
 	{
-		if(command[0]=='1')
+		if(command[0]=='1' || command[0]=='0')
 			return 1;
-		else if(command[0]=='0') 
-			return 0;
 	}
 	return -1;
 }
@@ -27,10 +25,8 @@ int getAnswer(char* answer)
 {
 	if(strlen(answer)==ANSWER_LENGTH) 
 	{
-		if(answer[0]=='Y')
+		if(answer[0]=='Y' || answer[0]=='N')
 			return 1;
-		else if(answer[0]=='N') 
-			return 0;
 	}
 	return -1;
 }
