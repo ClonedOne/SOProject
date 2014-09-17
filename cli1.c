@@ -64,7 +64,7 @@ void* func_t_2 (){
 //fills out the sockaddr struct
 	client.sin_family = AF_INET;
 	client.sin_port = htons(5000);
-	if (inet_aton("192.168.43.63", &client.sin_addr) == 0) {
+	if (inet_aton("192.168.43.107", &client.sin_addr) == 0) {
 		perror("Address to network conversion error");
 	}
 	
@@ -81,27 +81,29 @@ void* func_t_2 (){
 	while(1){
 		success = 0;
 		sem_wait(&sem1); 
-		puts("sono qui");
+		serverCom[1] = '\0';
+		//puts("sono qui");
 		char letter = serverCom[0];
 		switch(letter){
 			case '0':
 				while(success == 0){
-					write(sock, serverCom, SERV_COM);
-					puts("ho scritto!!!");
-					serverCom[0] = '\0';
+					send(sock, serverCom, SERV_COM,0);
+					//puts("ho scritto!!!");
+					memset(serverCom, 0, SERV_COM);
 					read(sock, serverCom, SERV_COM);
+					printf("received ack: %c\n", serverCom[0]);
 					if (serverCom[0] == '0')
 						puts("Server Operation FAILED");
 					//Send User Name to Server			
 					do {
 						do{
-							userName[0] = '\0';
+							memset(userName, 0, USERNAME);
 							puts("Please insert your User Name");
 							fgets(userName, USERNAME, stdin);
 						} while (acceptableString(userName) == 0);
 						userName[strlen(userName) -1] = '\0';
-						write(sock, userName, USERNAME);
-						serverCom[0] = '\0';
+						send(sock, userName, USERNAME,0);
+						memset(serverCom, 0, SERV_COM);
 						read(sock, serverCom, SERV_COM);
 						if (serverCom[0] == '0')
 							puts("User Name not available please insert another");
@@ -245,7 +247,7 @@ int main(int argc, char*argv[]){
 	row_count = 0;
 
 //Spawn server talking thread and  create communication semaphores
-	if (sem_init(&sem1, 0, SEMZERO) == -1 || sem_init(&sem2, 0, SEMONE) == -1)
+	if (sem_init(&sem1, 0, SEMZERO) == -1 || sem_init(&sem2, 0, SEMZERO) == -1)
 		perror("Couldn't create the semaphores");
 	retT2 = pthread_create(&t2, NULL, &func_t_2, NULL);
 	if (retT2 != 0)
@@ -262,7 +264,7 @@ int main(int argc, char*argv[]){
 		fgets(serverCom, SERV_COM, stdin);
 	}
 #ifdef DEBUG
-	printf("comando = %c",serverCom[0]);
+	printf("comando = %c\n",serverCom[0]);
 #endif
 	sem_post(&sem1);
 	sem_wait(&sem2);
