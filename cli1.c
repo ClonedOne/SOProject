@@ -98,9 +98,9 @@ void* func_t_2 (){
 					do {
 						do{
 							memset(userName, 0, USERNAME);
-							puts("Please insert your User Name");
+							puts("Please insert your User Name, it must be shorter than 32 chars");
 							fgets(userName, USERNAME, stdin);
-						} while (acceptableString(userName) == 0);
+						} while (acceptableString(userName) == 0 || strlen(userName) > USERNAME -1);
 						userName[strlen(userName) -1] = '\0';
 						send(sock, userName, USERNAME,0);
 						memset(serverCom, 0, SERV_COM);
@@ -111,9 +111,9 @@ void* func_t_2 (){
 					//Send Password to Server
 					do{
 						userPwd[0] = '\0';
-						puts("Please insert your Password");
+						puts("Please insert your Password, it must be shorter than 32 chars");
 						fgets(userPwd, PASSWORD, stdin);
-					} while (acceptableString(userPwd) == 0);
+					} while (acceptableString(userPwd) == 0 || strlen(userPwd) > PASSWORD -1);
 					userPwd[strlen(userPwd) -1] = '\0';
 					write(sock, userPwd, PASSWORD);
 					serverCom[0] = '\0';
@@ -128,7 +128,7 @@ void* func_t_2 (){
 			case '1':
 				while(success == 0){
 					write(sock, serverCom, SERV_COM);
-					serverCom[0] = '\0';
+					memset(serverCom, 0, SERV_COM);
 					read(sock, serverCom, SERV_COM);
 					if (serverCom[0] == '0')
 						puts("Server Operation FAILED");
@@ -138,27 +138,26 @@ void* func_t_2 (){
 							userName[0] = '\0';
 							puts("Please insert your User Name");
 							fgets(userName, USERNAME, stdin);
-						} while (acceptableString(userName) == 0);
+						} while (acceptableString(userName) == 0 || strlen(userName) > USERNAME -1);
 						userName[strlen(userName) -1] = '\0';		
 						write(sock, userName, USERNAME);
-						serverCom[0] = '\0';
+						memset(serverCom, 0, SERV_COM);
 						read(sock, serverCom, SERV_COM);
-						if (serverCom[0] == '0')
-							puts("Wrong User Name please insert another");
-					}while(serverCom[0] != '1');
+						if (serverCom[0] == '0'){
+							puts("Server Error");
+						}
 					//Send Password to Server
-					do{
 						do{
 							userPwd[0] = '\0';
 							puts("Please insert your Password");
 							fgets(userPwd, PASSWORD, stdin);
-						} while (acceptableString(userPwd) == 0);
+						} while (acceptableString(userPwd) == 0 || strlen(userPwd) > PASSWORD -1);
 						userPwd[strlen(userPwd) -1] = '\0';		
 						write(sock, userPwd, PASSWORD);
-						serverCom[0] = '\0';
+						memset(serverCom, 0, SERV_COM);
 						read(sock, serverCom, SERV_COM);
 						if (serverCom[0] == '0')
-							puts("Wrong Password please insert another");
+							puts("Wrong Username and Password combination please insert another");
 					}while(serverCom[0] != '1');
 					success = 1;
 				}
