@@ -48,7 +48,7 @@ void* func_t_2 (){
 
 	int success;
 	int sock;
-	char buff[DIM];
+	char buff[32];
 	struct sockaddr_in client;
 	
 	
@@ -82,7 +82,7 @@ void* func_t_2 (){
 		success = 0;
 		sem_wait(&sem1); 
 		serverCom[1] = '\0';
-		//puts("sono qui");
+		puts("sono qui");
 		char letter = serverCom[0];
 		switch(letter){
 			case '0':
@@ -198,15 +198,17 @@ void* func_t_2 (){
 			break;
 				
 			case '5':
+				puts("caso 5");
 				do{
 					serverCom[0] = '5';
 					write(sock, serverCom, SERV_COM);
-					serverCom[0] = '\0';
+					memset(serverCom, 0, SERV_COM);
 					read(sock, serverCom, SERV_COM);
 				}while(serverCom[0] != '1');
 				int size;
 				do {
-					if((size = read(sock, buff, DIM)) == -1)
+					memset(buff, 0, 32);
+					if((size = recv(sock, buff, 32, 0)) == -1)
 						perror("read error");
 					if (size > 0)
 						printf("%s\n",buff);
@@ -270,7 +272,8 @@ int main(int argc, char*argv[]){
 
 	//This loop ends when the user input the ::q command
 	while(com_res != QUIT){
-		
+		puts("SONO NEL MAIN");
+		printf("com res = %d\n", com_res);
 		if(com_res == LISTEN)
 			func_1();
 		else if (com_res == CONNECT)
@@ -279,12 +282,11 @@ int main(int argc, char*argv[]){
 			serverCom[0] = '5';
 			sem_post(&sem1);
 			sem_wait(&sem2);
+			com_res = LISTEN;
 		}
 			
-		com_res = LISTEN;
-		
-		
 	}
+
 	printf("\033[1;31mQuitting....\033[0m\n");
 	sleep(2);
 	clearS();
@@ -661,7 +663,7 @@ void func_1 () {
 		}
 
 //Checks if the user selected the "quit" option |||CHECKIT||
-		if(com_res == QUIT)
+		if(com_res == QUIT || com_res == LIST)
 			break;
 
 //clears the screen
