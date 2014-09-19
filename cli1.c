@@ -207,8 +207,9 @@ void* func_t_2 (){
 				}while(serverCom[0] != '1');
 				int size;
 				do {
+					memset(serverCom, 0, SERV_COM);
 					memset(buff, 0, 32);
-					if((size = recv(sock, buff, 32, 0)) == -1)
+					if((size = read(sock, buff, 32)) == -1)
 						perror("read error");
 					if (size > 0)
 						printf("%s\n",buff);
