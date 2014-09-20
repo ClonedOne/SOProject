@@ -167,7 +167,7 @@ void* func_t_2 (){
 				while (success == 0) {
 					serverCom[0] = '2';
 					write(sock, serverCom, SERV_COM);
-					serverCom[0] = '\0';
+					memset(serverCom, 0, SERV_COM);
 					read(sock, serverCom, SERV_COM);
 					if (serverCom[0] == '1')
 						success = 1;
@@ -177,8 +177,9 @@ void* func_t_2 (){
 			case '3':
 				while (success == 0) {
 					serverCom[0] = '3';
+					puts("SOnO DOE SI MANDA LA ROBA");
 					write(sock, serverCom, SERV_COM);
-					serverCom[0] = '\0';
+					memset(serverCom, 0, SERV_COM);
 					read(sock, serverCom, SERV_COM);
 					if (serverCom[0] == '1')
 						success = 1;
@@ -190,7 +191,8 @@ void* func_t_2 (){
 				while (success == 0) {
 					serverCom[0] = '4';
 					write(sock, serverCom, SERV_COM);
-					serverCom[0] = '\0';
+					puts("TEORICAMENTE TI HO MANDATO LA ROBBBBA!");
+					memset(serverCom, 0, SERV_COM);
 					read(sock, serverCom, SERV_COM);
 					if (serverCom[0] == '1')
 						success = 1;
@@ -205,15 +207,22 @@ void* func_t_2 (){
 					memset(serverCom, 0, SERV_COM);
 					read(sock, serverCom, SERV_COM);
 				}while(serverCom[0] != '1');
-				int size;
 				do {
+					memset(serverCom, 0, SERV_COM);
 					memset(buff, 0, 32);
-					if((size = recv(sock, buff, 32, 0)) == -1)
-						perror("read error");
-					if (size > 0)
+					read(sock, serverCom, SERV_COM);
+					printf("command received = %c\n", serverCom[0]);
+					if (serverCom[0] == '1') {
+						if ((read(sock, buff, 32)) == -1)
+							perror("read error");
 						printf("%s\n",buff);
-				}while(size > 0);
+						if ((read(sock, buff, 32)) == -1)
+							perror("read error");
+						printf("%s\n",buff);
+					}
+				}while(serverCom[0] != '0');
 				success = 1;
+				puts("fetched all the list");
 			break;
 		
 			default:
@@ -233,9 +242,16 @@ void* func_t_2 (){
 //THE MAIN FUNCTION
 
 int main(int argc, char*argv[]){
-
+	
 	int retT2;		//server talking thread return value
 	
+	FILE * pFile;
+	pFile = fopen ("doge.txt","r");
+	char c [1024];
+	while(fgets(c, 1024, pFile) != NULL){
+		printf("%s",c);
+	}
+	sleep(5);
 	
 //Variables initialization phase
 	com_res = LISTEN;
@@ -261,7 +277,7 @@ int main(int argc, char*argv[]){
 	fgets(serverCom, SERV_COM, stdin);
 	while (serverCom[0] != '1' && serverCom[0] != '0'){
 		puts("Invalid command please repeat your selection");
-		serverCom[0] = '\0';
+		memset(serverCom, 0, SERV_COM);
 		fgets(serverCom, SERV_COM, stdin);
 	}
 #ifdef DEBUG
@@ -278,12 +294,7 @@ int main(int argc, char*argv[]){
 			func_1();
 		else if (com_res == CONNECT)
 			func_3();
-		else {
-			serverCom[0] = '5';
-			sem_post(&sem1);
-			sem_wait(&sem2);
-			com_res = LISTEN;
-		}
+	
 			
 	}
 
@@ -302,6 +313,11 @@ void func_3() {
 	struct sockaddr_in client;
 	char sendBuf[DIM];
 	char recvBuf[DIM];
+	
+	serverCom[0] = '4';
+	sem_post(&sem1);
+	sem_wait(&sem2);
+	
 	
 	resetBlockInput();
 	callingIP[0] = '\0';
@@ -357,7 +373,7 @@ void func_3() {
 			
 //Chat loop
 	chat(&sock, sendBuf, recvBuf);
-
+	com_res = LISTEN;
 }
 
 
@@ -517,10 +533,13 @@ int command(char* buf) {
 		case 'L':		
 		case 'l':
 			if (inchat == INCHAT){
-				printf("Please disconnect from current call before attempting a connection to the server");
+				printf("Please disconnect from current call before retireving the active user list");
 				return LISTEN;
 			}
-			return LIST;
+			serverCom[0] = '5';
+			sem_post(&sem1);
+			sem_wait(&sem2);
+			return LISTEN;
 		break;
 			
 		case 'Q':
@@ -615,7 +634,7 @@ void func_1 () {
 	char sendBuf[DIM];
 	char recvBuf[DIM];
 
-	
+
 //open the server socket to accept connections
 	if ((servsock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1){
 		perror("Could not Open socket");
@@ -649,21 +668,29 @@ void func_1 () {
 #ifdef DEBUG
 	puts("The process is now listening");
 #endif
+	
+	com_res = LISTEN;
 
-	while(com_res != QUIT && com_res != LIST && com_res != CONNECT){
+	while(com_res != QUIT && com_res != CONNECT){
+	
+		puts("MI STAI PRENDO PER IL CULO?");
+		serverCom[0] = '3';
+		sem_post(&sem1);
+		sem_wait(&sem2);
+	
 	
 //waits for connections, changing both servsock and stdin to NONBLOCK
 		length = sizeof(client);
 		puts("Type '::h' for HELP\n\033[1;34mWaiting for incoming calls.....\033[0m");
 		noBlockInput();
 		noBlockSocket(servsock);
-		while ((sock_a = accept(servsock, (struct sockaddr *)&client, &length)) == -1 && com_res != QUIT && com_res != LIST && com_res != CONNECT){
+		while ((sock_a = accept(servsock, (struct sockaddr *)&client, &length)) == -1 && com_res != QUIT && com_res != CONNECT){
 			if((fgets(sendBuf, DIM, stdin)) != NULL)
 				checkForCommand(sendBuf);
 		}
 
 //Checks if the user selected the "quit" option |||CHECKIT||
-		if(com_res == QUIT || com_res == LIST)
+		if(com_res == QUIT|| com_res == CONNECT)
 			break;
 
 //clears the screen
@@ -693,6 +720,10 @@ void func_1 () {
 			sendBuf[0] = '\0';
 		}
 		if(com_res == ACCEPT){
+
+		serverCom[0] = '4';
+		sem_post(&sem1);
+		sem_wait(&sem2);
 			
 //sends accept confirmation
 			sendBuf[0] = 1;

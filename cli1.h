@@ -4,7 +4,6 @@
 
 #define DIM (1024)
 #define CONNECT (3)
-#define LIST (2)
 #define ACCEPT (1)
 #define LISTEN (0)
 #define DISCONNECT (-2)
