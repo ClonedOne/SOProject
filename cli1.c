@@ -64,7 +64,7 @@ void* func_t_2 (){
 //fills out the sockaddr struct
 	client.sin_family = AF_INET;
 	client.sin_port = htons(5000);
-	if (inet_aton("192.168.43.107", &client.sin_addr) == 0) {
+	if (inet_aton("192.168.43.63", &client.sin_addr) == 0) {
 		perror("Address to network conversion error");
 	}
 	

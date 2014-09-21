@@ -64,7 +64,7 @@ void* func_t_2 (){
 //fills out the sockaddr struct
 	client.sin_family = AF_INET;
 	client.sin_port = htons(5000);
-	if (inet_aton("192.168.43.107", &client.sin_addr) == 0) {
+	if (inet_aton("192.168.43.63", &client.sin_addr) == 0) {
 		perror("Address to network conversion error");
 	}
 	
@@ -668,11 +668,13 @@ void func_1 () {
 #ifdef DEBUG
 	puts("The process is now listening");
 #endif
-	
+
 	com_res = LISTEN;
+	
 
 	while(com_res != QUIT && com_res != CONNECT){
 	
+		
 		puts("MI STAI PRENDO PER IL CULO?");
 		serverCom[0] = '3';
 		sem_post(&sem1);
