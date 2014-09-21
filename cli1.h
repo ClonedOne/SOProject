@@ -45,6 +45,7 @@ void printSendUp(char* sendBuf, int length);
 
 //Change socket to NONBLOCKING mode
 void noBlockSocket(int ds_sock);
+void resetBlockSocket(int ds_sock);
 
 
 //Change stdin to NONBLOCKING mode

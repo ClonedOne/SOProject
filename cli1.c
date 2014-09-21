@@ -80,7 +80,15 @@ void* func_t_2 (){
 //Wait for the semaphore
 	while(1){
 		success = 0;
-		sem_wait(&sem1); 
+		puts("SONO DAVANTI ALLA WAIT SU SEM1");
+		long sam = (long) &sem1;
+		printf("semaphore address is %ld", sam);
+		int cv;
+		if (sem_getvalue(&sem1, &cv) == -1)
+				perror("problem getvalue");
+			printf("current sempahore value =  %d\n", cv);
+		if (sem_wait(&sem1) == -1)
+			perror("erro on sem1 wait function"); 
 		serverCom[1] = '\0';
 		puts("sono qui");
 		char letter = serverCom[0];
@@ -194,6 +202,7 @@ void* func_t_2 (){
 					puts("TEORICAMENTE TI HO MANDATO LA ROBBBBA!");
 					memset(serverCom, 0, SERV_COM);
 					read(sock, serverCom, SERV_COM);
+					printf("giunge l'ack = %c\n", serverCom[0]);
 					if (serverCom[0] == '1')
 						success = 1;
 				}
@@ -232,8 +241,9 @@ void* func_t_2 (){
 		serverCom[0] = '\0';
 		if (success == 1);
 			sem_post(&sem2);
-		
+		puts("sono alla fine della funzione 2");
 	}
+	puts("sono uscitooooooooooooooooooooooooooooooooooooOO");
 	close(sock);
 }
 
@@ -266,6 +276,8 @@ int main(int argc, char*argv[]){
 //Spawn server talking thread and  create communication semaphores
 	if (sem_init(&sem1, 0, SEMZERO) == -1 || sem_init(&sem2, 0, SEMZERO) == -1)
 		perror("Couldn't create the semaphores");
+		long sam = (long) &sem1;
+	printf("ctreated semaphore address is = %ld\n", sam );
 	retT2 = pthread_create(&t2, NULL, &func_t_2, NULL);
 	if (retT2 != 0)
 		perror("Couldn't create the thread!");
@@ -319,6 +331,8 @@ void func_3() {
 	sem_wait(&sem2);
 	
 	
+	
+	
 	resetBlockInput();
 	callingIP[0] = '\0';
 	
@@ -352,14 +366,22 @@ void func_3() {
 		exit(EXIT_FAILURE);
 	}
 	
+
 //sends userName to the called client and gets its name
-	write(sock, userName, DIM);
-	read(sock, callingID, DIM);
+	write(sock, userName, 32);
 	
+	
+	
+	read(sock, callingID, 32);
+	
+		serverCom[0] = '3';
+	sem_post(&sem1);
+	sem_wait(&sem2);
 	
 	read(sock, recvBuf, DIM);
 	if (recvBuf[0] == 0){
-		printf("Your call has benn refused\n");
+		printf("Your call has been refused\n");
+		com_res = LISTEN;
 		return;
 	}
 
@@ -370,10 +392,17 @@ void func_3() {
 	inchat = INCHAT;
 	stampaHeader();
 	
+	
 			
 //Chat loop
 	chat(&sock, sendBuf, recvBuf);
+	resetBlockInput();
+	resetBlockSocket(sock);
+	
+	
 	com_res = LISTEN;
+	close(sock);
+	
 }
 
 
@@ -450,6 +479,10 @@ void noBlockSocket(int ds_sock){
 	fcntl(ds_sock, F_SETFL, flags | O_NONBLOCK);
 }
 
+//Reset stdin to BLOCKING mode
+void resetBlockSocket(int ds_sock){
+	fcntl(ds_sock, F_SETFL, 0);
+}
 
 //Change stdin to NONBLOCKING mode
 void noBlockInput () {
@@ -677,14 +710,25 @@ void func_1 () {
 		
 		puts("MI STAI PRENDO PER IL CULO?");
 		serverCom[0] = '3';
-		sem_post(&sem1);
-		sem_wait(&sem2);
+				long sam = (long) &sem1;
+		printf("semaphore address is = %ld\n", sam );
+			
+			int cv;
+			if (sem_getvalue(&sem1, &cv) == -1)
+				perror("problem getvalue");
+			printf("current sempahore value =  %d\n", cv);
+			if (sem_post(&sem1) == -1)
+				perror("problema post semaphore");
+			if (sem_getvalue(&sem1, &cv) == -1)
+				perror("problem getvalue");
+			printf("current sempahore value after post=  %d\n", cv);
+			sem_wait(&sem2);
 	
 	
 //waits for connections, changing both servsock and stdin to NONBLOCK
 		length = sizeof(client);
 		puts("Type '::h' for HELP\n\033[1;34mWaiting for incoming calls.....\033[0m");
-		noBlockInput();
+	//	noBlockInput();
 		noBlockSocket(servsock);
 		while ((sock_a = accept(servsock, (struct sockaddr *)&client, &length)) == -1 && com_res != QUIT && com_res != CONNECT){
 			if((fgets(sendBuf, DIM, stdin)) != NULL)
@@ -692,7 +736,7 @@ void func_1 () {
 		}
 
 //Checks if the user selected the "quit" option |||CHECKIT||
-		if(com_res == QUIT|| com_res == CONNECT)
+		if(com_res == QUIT || com_res == CONNECT)
 			break;
 
 //clears the screen
@@ -705,11 +749,11 @@ void func_1 () {
 	
 //Gets caller's IP and name and sends own name
 		callingIP = inet_ntoa(client.sin_addr);
-		read(sock_a, recvBuf, DIM);
+		read(sock_a, recvBuf, 32);
 		strcpy(callingID, recvBuf);
 		recvBuf[0] = '\0';
 		stampaHeader();
-		write(sock_a, userName, DIM);
+		write(sock_a, userName, 32);
 		
 
 //Asks the user if she/he wants to accept the incoming call
