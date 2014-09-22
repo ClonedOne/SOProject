@@ -332,7 +332,7 @@ void func_3() {
 	
 	
 	
-	
+		inchat = INCHAT;
 	resetBlockInput();
 	callingIP[0] = '\0';
 	
@@ -341,7 +341,7 @@ void func_3() {
 	
 	fgets(callingIP, DIM, stdin);
 	puts("WAT?!?!?");
-	
+	checkForCommand(callingIP);
 	callingIP[strlen(callingIP) - 1] = '\0';
 	
 	printf("chosen ip is %s\n",callingIP);
@@ -349,7 +349,8 @@ void func_3() {
 //creates the socket
 	if ((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1){
 		perror("Could not Open socket");
-		exit(EXIT_FAILURE);
+		return;
+		//exit(EXIT_FAILURE);
 	}
 	
 //fills up socket information
@@ -357,13 +358,15 @@ void func_3() {
 	client.sin_port = htons(4100);
 	if (inet_aton(callingIP, &client.sin_addr) == 0) {
 		perror("Address to network conversion error");
-		exit(EXIT_FAILURE);
+		return;
+		//exit(EXIT_FAILURE);
 	}
 
 //try to connect
 	if (connect(sock,(struct sockaddr *)&client,sizeof(client)) == -1){
 		perror("Couldn't connect");
-		exit(EXIT_FAILURE);
+		return;
+		//exit(EXIT_FAILURE);
 	}
 	
 
@@ -373,11 +376,7 @@ void func_3() {
 	
 	
 	read(sock, callingID, 32);
-	
-		serverCom[0] = '3';
-	sem_post(&sem1);
-	sem_wait(&sem2);
-	
+		
 	read(sock, recvBuf, DIM);
 	if (recvBuf[0] == 0){
 		printf("Your call has been refused\n");
@@ -389,7 +388,7 @@ void func_3() {
 	noBlockSocket(sock);
 	noBlockInput();
 
-	inchat = INCHAT;
+
 	stampaHeader();
 	
 	
@@ -537,6 +536,8 @@ int command(char* buf) {
 		
 		case 'A':
 		case 'a':
+			if (inchat == INCHAT)
+				return LISTEN;
 			return ACCEPT;
 		break;
 		
@@ -701,7 +702,8 @@ void func_1 () {
 #ifdef DEBUG
 	puts("The process is now listening");
 #endif
-
+	
+	
 	com_res = LISTEN;
 	
 
@@ -723,12 +725,12 @@ void func_1 () {
 				perror("problem getvalue");
 			printf("current sempahore value after post=  %d\n", cv);
 			sem_wait(&sem2);
-	
+	inchat = NOTINCHAT;
 	
 //waits for connections, changing both servsock and stdin to NONBLOCK
 		length = sizeof(client);
 		puts("Type '::h' for HELP\n\033[1;34mWaiting for incoming calls.....\033[0m");
-	//	noBlockInput();
+		noBlockInput();
 		noBlockSocket(servsock);
 		while ((sock_a = accept(servsock, (struct sockaddr *)&client, &length)) == -1 && com_res != QUIT && com_res != CONNECT){
 			if((fgets(sendBuf, DIM, stdin)) != NULL)
@@ -758,7 +760,7 @@ void func_1 () {
 
 //Asks the user if she/he wants to accept the incoming call
 		com_res = LISTEN;	
-		inchat = INCHAT;
+		
 		printf("Do you want to accept the incoming call?\n");
 		while (com_res == LISTEN) {
 			if((fgets(sendBuf, DIM, stdin)) != NULL)
@@ -770,10 +772,10 @@ void func_1 () {
 		serverCom[0] = '4';
 		sem_post(&sem1);
 		sem_wait(&sem2);
-			
+			inchat = INCHAT;
 //sends accept confirmation
 			sendBuf[0] = 1;
-			write(sock_a, userName, DIM);
+			write(sock_a, sendBuf, DIM);
 			sendBuf[0] = '\0';
 			
 //change the communicating socket and STDIN to NONBLOCKING mode

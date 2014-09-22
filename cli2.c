@@ -702,6 +702,7 @@ void func_1 () {
 	puts("The process is now listening");
 #endif
 
+
 	com_res = LISTEN;
 	
 
@@ -723,12 +724,12 @@ void func_1 () {
 				perror("problem getvalue");
 			printf("current sempahore value after post=  %d\n", cv);
 			sem_wait(&sem2);
-	
+		inchat = NOTINCHAT;
 	
 //waits for connections, changing both servsock and stdin to NONBLOCK
 		length = sizeof(client);
 		puts("Type '::h' for HELP\n\033[1;34mWaiting for incoming calls.....\033[0m");
-	//	noBlockInput();
+		noBlockInput();
 		noBlockSocket(servsock);
 		while ((sock_a = accept(servsock, (struct sockaddr *)&client, &length)) == -1 && com_res != QUIT && com_res != CONNECT){
 			if((fgets(sendBuf, DIM, stdin)) != NULL)
@@ -773,7 +774,7 @@ void func_1 () {
 			
 //sends accept confirmation
 			sendBuf[0] = 1;
-			write(sock_a, userName, DIM);
+			write(sock_a, sendBuf, DIM);
 			sendBuf[0] = '\0';
 			
 //change the communicating socket and STDIN to NONBLOCKING mode
