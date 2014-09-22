@@ -16,6 +16,7 @@ The goal of all of it is just to create a sinchronous communication channel betw
 #include <pthread.h>
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
+#include <signal.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -39,7 +40,23 @@ int com_res; 				//store the result of the command function
 int r;
 sem_t sem1;					//semaphore used by threadMain to start threadServer
 sem_t sem2;					//sempahore used by threadServer to give control back to threadMain
-pthread_t t1, t2, t3; 		//thread handles
+pthread_t t2; 		//thread handles
+
+
+//This function is used to keep track of changes in the size of the terminal window
+void sig_term_handler (int a) {
+	sig_man();
+	com_res = QUIT;
+}
+
+void sig_man () {
+	signal(SIGHUP, sig_term_handler);
+	signal(SIGINT, sig_term_handler);
+	signal(SIGQUIT, sig_term_handler);
+	signal(SIGILL, sig_term_handler);
+	signal(SIGSEGV, sig_term_handler);
+	signal(SIGTERM, sig_term_handler);
+}
 
 
 
@@ -64,7 +81,7 @@ void* func_t_2 (){
 //fills out the sockaddr struct
 	client.sin_family = AF_INET;
 	client.sin_port = htons(5000);
-	if (inet_aton("192.168.43.63", &client.sin_addr) == 0) {
+	if (inet_aton("192.168.43.107", &client.sin_addr) == 0) {
 		perror("Address to network conversion error");
 	}
 	
@@ -85,8 +102,10 @@ void* func_t_2 (){
 		printf("semaphore address is %ld", sam);
 		int cv;
 		if (sem_getvalue(&sem1, &cv) == -1)
-				perror("problem getvalue");
-			printf("current sempahore value =  %d\n", cv);
+			perror("problem getvalue");
+#ifdef DEBUG
+		printf("current sempahore value =  %d\n", cv);
+#endif
 		if (sem_wait(&sem1) == -1)
 			perror("erro on sem1 wait function"); 
 		serverCom[1] = '\0';
@@ -185,7 +204,9 @@ void* func_t_2 (){
 			case '3':
 				while (success == 0) {
 					serverCom[0] = '3';
-					puts("SOnO DOE SI MANDA LA ROBA");
+#ifdef DEBUG
+					puts("Sending Available signal to server");
+#endif
 					write(sock, serverCom, SERV_COM);
 					memset(serverCom, 0, SERV_COM);
 					read(sock, serverCom, SERV_COM);
@@ -199,7 +220,9 @@ void* func_t_2 (){
 				while (success == 0) {
 					serverCom[0] = '4';
 					write(sock, serverCom, SERV_COM);
-					puts("TEORICAMENTE TI HO MANDATO LA ROBBBBA!");
+#ifdef DEBUG
+					puts("Busy singal sent to server");
+#endif
 					memset(serverCom, 0, SERV_COM);
 					read(sock, serverCom, SERV_COM);
 					printf("giunge l'ack = %c\n", serverCom[0]);
@@ -220,7 +243,9 @@ void* func_t_2 (){
 					memset(serverCom, 0, SERV_COM);
 					memset(buff, 0, 32);
 					read(sock, serverCom, SERV_COM);
+#ifdef DEBUG
 					printf("command received = %c\n", serverCom[0]);
+#endif
 					if (serverCom[0] == '1') {
 						if ((read(sock, buff, 32)) == -1)
 							perror("read error");
@@ -231,7 +256,9 @@ void* func_t_2 (){
 					}
 				}while(serverCom[0] != '0');
 				success = 1;
+#ifdef DEBUG
 				puts("fetched all the list");
+#endif
 			break;
 		
 			default:
@@ -241,9 +268,13 @@ void* func_t_2 (){
 		serverCom[0] = '\0';
 		if (success == 1);
 			sem_post(&sem2);
+#ifdef DEBUG
 		puts("sono alla fine della funzione 2");
+#endif
 	}
-	puts("sono uscitooooooooooooooooooooooooooooooooooooOO");
+#ifdef DEBUG
+	puts("Exiting thread t2");
+#endif
 	close(sock);
 }
 
@@ -261,12 +292,13 @@ int main(int argc, char*argv[]){
 	while(fgets(c, 1024, pFile) != NULL){
 		printf("%s",c);
 	}
-	sleep(5);
+	//sleep(5);
 	
 //Variables initialization phase
 	com_res = LISTEN;
 	inchat = NOTINCHAT;			
 	callingIP = malloc(IPLEN);
+	sig_man();
 
 //this struct is used to store the dimensions (rows/col) of the terminal window
 	ioctl(0, TIOCGWINSZ, &ts);
@@ -276,8 +308,10 @@ int main(int argc, char*argv[]){
 //Spawn server talking thread and  create communication semaphores
 	if (sem_init(&sem1, 0, SEMZERO) == -1 || sem_init(&sem2, 0, SEMZERO) == -1)
 		perror("Couldn't create the semaphores");
-		long sam = (long) &sem1;
+#ifdef DEBUG	
+	long sam = (long) &sem1;
 	printf("ctreated semaphore address is = %ld\n", sam );
+#endif
 	retT2 = pthread_create(&t2, NULL, &func_t_2, NULL);
 	if (retT2 != 0)
 		perror("Couldn't create the thread!");
@@ -287,7 +321,7 @@ int main(int argc, char*argv[]){
 	puts("Welcome! We are now starting the service!");
 	printf("Please select which action to perform:\n Write '0' to Sign Up as a new user\n Write '1' to Log In\n");
 	fgets(serverCom, SERV_COM, stdin);
-	while (serverCom[0] != '1' && serverCom[0] != '0'){
+	while (serverCom[0] != '1' && serverCom[0] != '0' && com_res != QUIT){
 		puts("Invalid command please repeat your selection");
 		memset(serverCom, 0, SERV_COM);
 		fgets(serverCom, SERV_COM, stdin);
@@ -332,41 +366,43 @@ void func_3() {
 	
 	
 	
-		inchat = INCHAT;
+	inchat = INCHAT;
 	resetBlockInput();
 	callingIP[0] = '\0';
 	
 //Ask the user for the target of the connection
 	printf("Please select the user\n");
 	
-	fgets(callingIP, DIM, stdin);
-	puts("WAT?!?!?");
-	checkForCommand(callingIP);
-	callingIP[strlen(callingIP) - 1] = '\0';
 	
-	printf("chosen ip is %s\n",callingIP);
 	
 //creates the socket
 	if ((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1){
 		perror("Could not Open socket");
-		return;
-		//exit(EXIT_FAILURE);
 	}
 	
 //fills up socket information
 	client.sin_family = AF_INET;
 	client.sin_port = htons(4100);
-	if (inet_aton(callingIP, &client.sin_addr) == 0) {
-		perror("Address to network conversion error");
-		return;
-		//exit(EXIT_FAILURE);
-	}
+	int connection = 0;
+	do{
+		fgets(callingIP, IPLEN, stdin);
+		checkForCommand(callingIP);
+		callingIP[strlen(callingIP) - 1] = '\0';
+#ifdef DEBUG
+		printf("current comres value = %d\n", com_res);
+		printf("chosen ip is %s\n",callingIP);
+#endif
+		if (inet_aton(callingIP, &client.sin_addr) == 0) {
+			perror("Address to network conversion error");
+		}
+		else{
+			connection = 1;
+		}
+	}while (connection != 1 && com_res != QUIT && com_res != DISCONNECT);
 
 //try to connect
 	if (connect(sock,(struct sockaddr *)&client,sizeof(client)) == -1){
 		perror("Couldn't connect");
-		return;
-		//exit(EXIT_FAILURE);
 	}
 	
 
@@ -399,7 +435,8 @@ void func_3() {
 	resetBlockSocket(sock);
 	
 	
-	com_res = LISTEN;
+	if (com_res == DISCONNECT)
+		com_res = LISTEN;
 	close(sock);
 	
 }
@@ -554,6 +591,7 @@ int command(char* buf) {
 		
 		case 'D':
 		case 'd':
+			printf("inchat value = %d\n", inchat);
 			if (inchat == NOTINCHAT)
 				return LISTEN;
 			puts("Disconnecting...");
@@ -609,16 +647,17 @@ int checkForCommand(char* sendBuf) {
 	
 	if(len == 3 && sendBuf[0] == ':' && sendBuf[1] == ':') {
 		com_res = command(sendBuf);
+		printf("comres value = %d\n", com_res);
 		sendBuf[0] = '\0';
+		
 		return 1;
 	}
-	else if (inchat == 0){
+	else if (inchat == NOTINCHAT){
 		puts("Type '::h' for HELP");
 	}
 
 	return 0;
 }
-
 
 
 //Chat loop function
@@ -629,11 +668,19 @@ void chat(int* sock, char sendBuf[], char recvBuf[]) {
 	while(!(com_res < LISTEN)){				
 		rN = read(sock_a, recvBuf, DIM);
 		if(rN > 0){
+			if (strcmp(recvBuf, "::D\n") == 0|| strcmp(recvBuf, "::d\n") == 0 || strcmp(recvBuf, "::q\n") == 0 || strcmp(recvBuf, "::Q\n") == 0){
+				char* op = "::D\n\0";
+				memcpy(recvBuf, op, 5);
+				checkForCommand(recvBuf);
+			}
 			printRecvUp(recvBuf, strlen(recvBuf));
 			recvBuf[0] = '\0';
 		}
 		if((fgets(sendBuf, DIM, stdin)) != NULL) {
 			if(acceptableString(sendBuf) == 1){
+				if (strcmp(sendBuf, "::D\n") == 0|| strcmp(sendBuf, "::d\n") == 0 || strcmp(sendBuf, "::q\n") == 0 || strcmp(sendBuf, "::Q\n") == 0){
+					write(sock_a, sendBuf, DIM);
+				}
 				if(checkForCommand(sendBuf) != 1){
 					printf("\033[2K");
 					printSendUp(sendBuf, strlen(sendBuf));
@@ -725,7 +772,7 @@ void func_1 () {
 				perror("problem getvalue");
 			printf("current sempahore value after post=  %d\n", cv);
 			sem_wait(&sem2);
-	inchat = NOTINCHAT;
+			inchat = NOTINCHAT;
 	
 //waits for connections, changing both servsock and stdin to NONBLOCK
 		length = sizeof(client);
@@ -733,8 +780,9 @@ void func_1 () {
 		noBlockInput();
 		noBlockSocket(servsock);
 		while ((sock_a = accept(servsock, (struct sockaddr *)&client, &length)) == -1 && com_res != QUIT && com_res != CONNECT){
-			if((fgets(sendBuf, DIM, stdin)) != NULL)
+			if((fgets(sendBuf, DIM, stdin)) != NULL){
 				checkForCommand(sendBuf);
+			}
 		}
 
 //Checks if the user selected the "quit" option |||CHECKIT||
@@ -751,11 +799,11 @@ void func_1 () {
 	
 //Gets caller's IP and name and sends own name
 		callingIP = inet_ntoa(client.sin_addr);
-		read(sock_a, recvBuf, 32);
+		read(sock_a, recvBuf, IPLEN);
 		strcpy(callingID, recvBuf);
 		recvBuf[0] = '\0';
 		stampaHeader();
-		write(sock_a, userName, 32);
+		write(sock_a, userName, USERNAME);
 		
 
 //Asks the user if she/he wants to accept the incoming call
@@ -763,15 +811,19 @@ void func_1 () {
 		
 		printf("Do you want to accept the incoming call?\n");
 		while (com_res == LISTEN) {
-			if((fgets(sendBuf, DIM, stdin)) != NULL)
+			if((fgets(sendBuf, DIM, stdin)) != NULL){
+				inchat = INCHAT;
 				checkForCommand(sendBuf);
+				inchat = NOTINCHAT;
+			}
 			sendBuf[0] = '\0';
 		}
 		if(com_res == ACCEPT){
-
-		serverCom[0] = '4';
-		sem_post(&sem1);
-		sem_wait(&sem2);
+			inchat = INCHAT;
+//Sends busy message to server
+			serverCom[0] = '4';
+			sem_post(&sem1);
+			sem_wait(&sem2);
 			inchat = INCHAT;
 //sends accept confirmation
 			sendBuf[0] = 1;
@@ -789,9 +841,9 @@ void func_1 () {
 //Chat loop
 			chat(&sock_a, sendBuf, recvBuf);
 		}
-		else if (com_res != QUIT){
+		else{
 			sendBuf[0] = 0;
-			write(sock_a, userName, DIM);
+			write(sock_a, sendBuf, DIM);
 			sendBuf[0] = '\0';
 			close(sock_a);
 			puts("Call refused");

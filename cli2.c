@@ -64,7 +64,7 @@ void* func_t_2 (){
 //fills out the sockaddr struct
 	client.sin_family = AF_INET;
 	client.sin_port = htons(5000);
-	if (inet_aton("192.168.43.63", &client.sin_addr) == 0) {
+	if (inet_aton("192.168.43.107", &client.sin_addr) == 0) {
 		perror("Address to network conversion error");
 	}
 	
@@ -261,7 +261,7 @@ int main(int argc, char*argv[]){
 	while(fgets(c, 1024, pFile) != NULL){
 		printf("%s",c);
 	}
-	sleep(5);
+	//sleep(5);
 	
 //Variables initialization phase
 	com_res = LISTEN;
@@ -400,7 +400,8 @@ void func_3() {
 	resetBlockSocket(sock);
 	
 	
-	com_res = LISTEN;
+	if (com_res == DISCONNECT)
+		com_res = LISTEN;
 	close(sock);
 	
 }
@@ -608,10 +609,12 @@ int checkForCommand(char* sendBuf) {
 	
 	if(len == 3 && sendBuf[0] == ':' && sendBuf[1] == ':') {
 		com_res = command(sendBuf);
+		puts("ciao");
 		sendBuf[0] = '\0';
+		
 		return 1;
 	}
-	else if (inchat == 0){
+	else if (inchat == NOTINCHAT){
 		puts("Type '::h' for HELP");
 	}
 
@@ -628,11 +631,19 @@ void chat(int* sock, char sendBuf[], char recvBuf[]) {
 	while(!(com_res < LISTEN)){				
 		rN = read(sock_a, recvBuf, DIM);
 		if(rN > 0){
+			if (strcmp(recvBuf, "::D\n") == 0|| strcmp(recvBuf, "::d\n") == 0 || strcmp(recvBuf, "::q\n") == 0 || strcmp(recvBuf, "::Q\n") == 0){
+				char* op = "::D\n\0";
+				memcpy(recvBuf, op, 5);
+				checkForCommand(recvBuf);
+			}
 			printRecvUp(recvBuf, strlen(recvBuf));
 			recvBuf[0] = '\0';
 		}
 		if((fgets(sendBuf, DIM, stdin)) != NULL) {
 			if(acceptableString(sendBuf) == 1){
+				if (strcmp(sendBuf, "::D\n") == 0|| strcmp(sendBuf, "::d\n") == 0 || strcmp(sendBuf, "::q\n") == 0 || strcmp(sendBuf, "::Q\n") == 0){
+					write(sock_a, sendBuf, DIM);
+				}
 				if(checkForCommand(sendBuf) != 1){
 					printf("\033[2K");
 					printSendUp(sendBuf, strlen(sendBuf));
@@ -759,7 +770,7 @@ void func_1 () {
 
 //Asks the user if she/he wants to accept the incoming call
 		com_res = LISTEN;	
-		inchat = INCHAT;
+		
 		printf("Do you want to accept the incoming call?\n");
 		while (com_res == LISTEN) {
 			if((fgets(sendBuf, DIM, stdin)) != NULL)
@@ -767,10 +778,11 @@ void func_1 () {
 			sendBuf[0] = '\0';
 		}
 		if(com_res == ACCEPT){
-
-		serverCom[0] = '4';
-		sem_post(&sem1);
-		sem_wait(&sem2);
+			inchat = INCHAT;
+//Sends busy message to server
+			serverCom[0] = '4';
+			sem_post(&sem1);
+			sem_wait(&sem2);
 			
 //sends accept confirmation
 			sendBuf[0] = 1;
@@ -797,6 +809,7 @@ void func_1 () {
 			com_res = LISTEN;
 			inchat = NOTINCHAT;
 		}
+		puts("ciao");
 	}
 	close(servsock);
 }

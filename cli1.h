@@ -21,6 +21,13 @@
 #define SERV_COM (8)
 
 
+
+//signal management fucntion
+void sig_man();
+
+//signal triggered termination procedure
+void sig_term_handler(int a);
+
 //Clear Screen
 void clearS ();
 
