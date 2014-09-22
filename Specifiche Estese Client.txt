@@ -22,7 +22,7 @@ Comandi Accettati
 Richieste al Server
 	'0' = Registrazione nuovo utente
 	'1' = Log In di un utente
-	'2' = Log Out di un utente
+	'2' = Log Out di un utente *NON IMPLEMENTATO*
 	'3' = Stato Disponibile di un utente
 	'4' = Stato Occupato di un utente
 	'5' = Richiesta della lista degli utenti attivi

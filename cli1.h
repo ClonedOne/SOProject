@@ -1,7 +1,11 @@
 #ifndef CLI1
 #define CLI1
 
-
+#define SERVERIP "192.168.0.6"
+#define SERVERPORT (5000)
+#define CLILISTENPORT (4000)
+#define CLICALLPORT (4100)
+#define MAPCOMLEN (32)
 #define DIM (1024)
 #define CONNECT (3)
 #define ACCEPT (1)
